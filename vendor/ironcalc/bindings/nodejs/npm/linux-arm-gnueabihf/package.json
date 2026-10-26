@@ -1,0 +1,23 @@
+{
+  "name": "@ironcalc/nodejs-linux-arm-gnueabihf",
+  "version": "0.8.3",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm"
+  ],
+  "main": "nodejs.linux-arm-gnueabihf.node",
+  "files": [
+    "nodejs.linux-arm-gnueabihf.node"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ironcalc/IronCalc.git",
+    "directory": "bindings/nodejs/npm/linux-arm-gnueabihf"
+  }
+}

@@ -1,0 +1,17 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/rudra-office-launcher",
+    "crates/office-ui-runtime",
+    "crates/rudra-office-app",
+]
+
+[workspace.package]
+edition = "2024"
+license = "MIT"
+
+# PDFOxide references the published Office Oxide crate. Pin it to the same
+# vendored source used by DOCX and PPTX adapters so one executable has only
+# one set of Office Oxide FFI symbols.
+[patch.crates-io]
+office_oxide = { path = "../vendor/office-oxide" }

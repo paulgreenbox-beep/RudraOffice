@@ -1,0 +1,11 @@
+[package]
+name = "sheets-xlsx"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ironcalc = { path = "../../../vendor/ironcalc/xlsx" }
+sheets-core = { path = "../sheets-core" }
+sheets-ironcalc-adapter = { path = "../sheets-ironcalc-adapter" }
+quick-xml = "0.38.4"
+zip = { version = "0.6.6", default-features = false, features = ["deflate"] }

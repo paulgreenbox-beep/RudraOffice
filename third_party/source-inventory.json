@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "kind": "technical source/license inventory; not legal approval",
+  "components": [
+    {
+      "name": "ironcalc",
+      "upstream": "https://github.com/ironcalc/ironcalc",
+      "base_revision": "879e71ddb6d4b0babaf88c21ce657e0abfecfdda",
+      "source_type": "vendored Rust source snapshot with local integration changes",
+      "declared_license": "MIT OR Apache-2.0",
+      "license_files": [
+        "LICENSE-MIT",
+        "LICENSE-Apache-2.0"
+      ],
+      "original_modified_files": [
+        "base/src/expressions/parser/stringify.rs",
+        "base/src/expressions/parser/tests/test_general.rs",
+        "xlsx/src/import/styles.rs",
+        "xlsx/src/import/util.rs"
+      ],
+      "published_modified_files": [
+        "base/src/expressions/parser/stringify.rs",
+        "base/src/expressions/parser/tests/test_general.rs",
+        "xlsx/src/import/styles.rs",
+        "xlsx/src/import/util.rs"
+      ]
+    },
+    {
+      "name": "office-oxide",
+      "upstream": "https://github.com/yfedoseev/office_oxide",
+      "base_revision": "b5819b19913ecf3f8295741244b907ea2de14e13",
+      "source_type": "vendored Rust source snapshot with local integration changes",
+      "declared_license": "MIT OR Apache-2.0",
+      "license_files": [
+        "LICENSE-MIT",
+        "LICENSE-APACHE",
+        "NOTICE"
+      ],
+      "original_modified_files": [
+        "src/convert_docx.rs",
+        "src/convert_pptx.rs",
+        "src/create.rs",
+        "src/pptx/shape.rs",
+        "src/pptx/slide.rs",
+        "src/pptx/text.rs"
+      ],
+      "published_modified_files": [
+        "src/convert_docx.rs",
+        "src/convert_pptx.rs",
+        "src/create.rs",
+        "src/pptx/shape.rs",
+        "src/pptx/slide.rs",
+        "src/pptx/text.rs"
+      ]
+    },
+    {
+      "name": "pdf-oxide",
+      "upstream": "https://github.com/yfedoseev/pdf_oxide",
+      "base_revision": "10b87f153200cd5c4d4a4defee471757091e6559",
+      "source_type": "vendored Rust source snapshot with local integration changes",
+      "declared_license": "MIT OR Apache-2.0",
+      "license_files": [
+        "LICENSE-MIT",
+        "LICENSE-APACHE",
+        "NOTICE"
+      ],
+      "original_modified_files": [
+        "src/rendering/text_rasterizer.rs",
+        "tests/test_blank_pages.rs"
+      ],
+      "published_modified_files": [
+        "src/rendering/text_rasterizer.rs"
+      ]
+    }
+  ],
+  "separate_dependencies": [
+    {
+      "name": "Rust Makepad Toolkit",
+      "repository": "https://github.com/paulgreenbox-beep/rust-makepad-toolkit",
+      "public_base": "c3b168ba10255ba644bd3a0d91524f3cd23cbf6b",
+      "license": "MIT",
+      "local_modifications_unpublished": true
+    },
+    {
+      "name": "Makepad",
+      "repository": "https://github.com/makepad/makepad",
+      "bootstrap_default_revision": "105158e08c89d47f57af4621420ed68eb3a147ce",
+      "local_sdk_revision": "UNVERIFIED: operator-managed SDK lacks independent Git metadata",
+      "license": "MIT OR Apache-2.0",
+      "copied": false
+    }
+  ],
+  "excluded_reference_components": [
+    {
+      "name": "Rudra-Editor",
+      "license": "AGPL-3.0",
+      "included": false,
+      "reason": "Reference only, not a publication dependency"
+    },
+    {
+      "name": "pdforg",
+      "license": "Unknown",
+      "included": false,
+      "reason": "Redistribution rights not established; reference only"
+    }
+  ],
+  "assets": [
+    {
+      "path": "vendor/pdf-oxide/src/fonts/assets/DejaVuSans.ttf",
+      "sha256": "abdc775b21b1bc470d50c97e790d276f2054b7504e56e5bd3e64f48d68582322"
+    },
+    {
+      "path": "vendor/pdf-oxide/src/fonts/assets/DejaVuSans-Bold.ttf",
+      "sha256": "0d977336a6d5fba34eab8e3199eb218327161b5143749f802982c2bc34df0c96"
+    },
+    {
+      "path": "vendor/pdf-oxide/src/fonts/assets/DroidSansFallbackFull.ttf",
+      "sha256": "acb6440a713d880a13a21b468ba7cd43f5a2b2934972e51be791c880730777b8"
+    },
+    {
+      "path": "vendor/pdf-oxide/src/fonts/assets/NotoEmoji-Regular.ttf",
+      "sha256": "415dc6290378574135b64c808dc640c1df7531973290c4970c51fdeb849cb0c5"
+    }
+  ],
+  "full_noto_font_license": "third_party/licenses/noto-emoji/LICENSE-OFL-1.1",
+  "transitive_license_audit": "NOT_COMPLETE; upstream declarations and local notices inventoried, no blanket legal clearance"
+}

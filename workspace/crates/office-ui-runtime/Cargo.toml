@@ -1,0 +1,10 @@
+[package]
+name = "office-ui-runtime"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "Transitional Rudra Office compatibility facade for Rust Makepad Toolkit"
+autobins = false
+
+[dependencies]
+makepad-toolkit-widgets = { path = "../../../../Rust_Makepad_Toolkit/crates/makepad-toolkit-widgets" }

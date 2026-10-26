@@ -1,0 +1,10 @@
+[package]
+name = "sheets-api"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+sheets-core = { path = "../sheets-core" }
+sheets-ironcalc-adapter = { path = "../sheets-ironcalc-adapter" }
+sheets-xlsx = { path = "../sheets-xlsx" }
+serde_json = "=1.0.151"

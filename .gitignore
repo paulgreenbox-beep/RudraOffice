@@ -1,0 +1,59 @@
+# Toolchain output and machine-local state
+**/target/
+**/node_modules/
+**/__pycache__/
+**/.vs/
+**/.idea/
+**/.vscode/
+**/.mimocode/
+**/.mimo-bridge/
+**/.qoder/
+**/.cache/
+**/.cache-tools/
+.cache/
+.cache-tools/
+*.tmp
+*.log
+*.bak
+*.exe
+*.dll
+*.pdb
+*.obj
+*.wasm
+*.pyc
+# Private source documents and local archives are not a public test corpus.
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+*.pdf
+*.zip
+*.7z
+fixtures/private/
+# Generated verification/evidence, never acceptance-by-source-control.
+reports/evidence/
+reports/script/
+reports/parallel-development/
+staging/
+verification/build-output/
+verification/capsules/
+verification/observer-capsules/
+verification/runs/
+verification/plans/
+verification/validation/
+releases/
+_archive/
+_quarantine/
+# Credentials
+.env
+.env.*
+**/.env
+**/.env.*
+*.pfx
+*.p12
+*.key
+id_rsa
+id_ed25519
+# Cargo.toml, Cargo.lock, source, tests, docs and source assets stay eligible.

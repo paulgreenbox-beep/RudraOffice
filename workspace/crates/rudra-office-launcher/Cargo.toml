@@ -1,0 +1,21 @@
+[package]
+name = "rudra-office-launcher"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["gui"]
+gui = ["dep:makepad-widgets", "dep:toolkit-windows-automation", "dep:windows-uia"]
+
+[dependencies]
+makepad-widgets = { path = "../../../../Rust_Makepad_Toolkit/.deps/makepad/widgets", version = "2.0.0", optional = true }
+
+[target.'cfg(windows)'.dependencies]
+toolkit-windows-automation = { path = "../../../../Rust_Makepad_Toolkit/crates/toolkit-windows-automation", optional = true }
+windows-uia = { package = "windows", version = "0.61.3", optional = true, features = ["Win32_Foundation", "Win32_Graphics_Gdi", "Win32_UI_HiDpi", "Win32_UI_WindowsAndMessaging"] }
+
+[[bin]]
+name = "rudra-office-launcher"
+path = "src/main.rs"
+required-features = ["gui"]

@@ -1,0 +1,20 @@
+{
+  "schema": "rudra-office-gui-development-v1",
+  "connection": "toolkit-gui-remote-canary",
+  "mode": "READ_ONLY_CANARY",
+  "allowed_tools": [
+    "windows_get_control_tree",
+    "windows_get_element_state",
+    "windows_get_automation_id_state",
+    "windows_capture_window",
+    "windows_get_evidence"
+  ],
+  "target_binding": "WINDOW_ID_FROM_THIS_CANARY_OWNER_ONLY",
+  "automatic_legacy_fallback": false,
+  "global_input_allowed": false,
+  "evidence_call_is_gui_acceptance": false,
+  "mutating_gui_acceptance": "BLOCKED_NOT_EXPOSED",
+  "historical_recipes": "PRESERVE_WITHOUT_REPLAY_OR_PROMOTION",
+  "runtime_libraries": "EXISTING_CARGO_DEPENDENCIES_UNCHANGED",
+  "contract_reference": "../Rust_Makepad_Toolkit/docs/TOOLKIT_MCP_EXPERIMENTAL_STATUS_2026_10_24.md"
+}

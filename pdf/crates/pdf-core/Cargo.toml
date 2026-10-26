@@ -1,0 +1,11 @@
+[package]
+name = "pdf-core"
+version = "0.1.0"
+edition = "2021"
+description = "Pure Rust core types and interfaces for PDF document handling"
+license = "MIT"
+
+[lib]
+name = "pdf_core"
+path = "src/lib.rs"
+

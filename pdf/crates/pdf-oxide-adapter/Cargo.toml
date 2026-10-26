@@ -1,0 +1,15 @@
+[package]
+name = "pdf-oxide-adapter"
+version = "0.1.0"
+edition = "2021"
+description = "Read-only Rudra PDF adapter backed by the vendored PDFOxide parser and renderer"
+license = "MIT"
+
+[lib]
+name = "pdf_oxide_adapter"
+path = "src/lib.rs"
+
+[dependencies]
+pdf-core = { path = "../pdf-core" }
+pdf_oxide = { path = "../../../vendor/pdf-oxide", features = ["rendering"] }
+image = { version = "0.25", default-features = false, features = ["png"] }

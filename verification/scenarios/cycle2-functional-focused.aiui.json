@@ -1,0 +1,1202 @@
+{
+  "version": 1,
+  "name": "rudra-policy-cycle2-functional-focused",
+  "application": {
+    "command": "C:\\Users\\PUBLIC_USER\\Documents\\RudraOffice\\reports\\parallel-development\\cycle2-20261012\\artifacts\\cycle2-integration-preview3\\rudra-office-app.exe",
+    "window_title": "Rudra Office"
+  },
+  "options": {
+    "stop_on_error": true,
+    "evidence_on_failure": true
+  },
+  "tags": [
+    "diagnostic",
+    "unaccepted",
+    "cycle2-functional",
+    "NOT_ACCEPTANCE"
+  ],
+  "steps": [
+    {
+      "op": "session.open",
+      "save_session_as": "app"
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "home"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/file-trigger"
+    },
+    {
+      "op": "wait_enabled",
+      "session": "app",
+      "id": "rudra-office/action/open"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/action/open",
+      "value": "C:\\Users\\PUBLIC_USER\\Documents\\RudraOffice\\vendor\\pdf-oxide\\tests\\fixtures\\hello_structure.pdf"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/action/open",
+      "value": "C:\\Users\\PUBLIC_USER\\Documents\\RudraOffice\\vendor\\pdf-oxide\\tests\\fixtures\\hello_structure.pdf"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/action/open"
+    },
+    {
+      "op": "wait_for_automation_id",
+      "session": "app",
+      "id": "rudra-office/document:1/tab",
+      "timeout_ms": 60000
+    },
+    {
+      "op": "wait_for_automation_id",
+      "session": "app",
+      "id": "rudra-office/pdf/canvas"
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/pdf/canvas"
+        },
+        "path": "$.value",
+        "contains_any": [
+          "drawn_rasters=1"
+        ],
+        "timeout_ms": 60000,
+        "max_iterations": 300,
+        "interval_ms": 200
+      }
+    },
+    {
+      "op": "screenshot_window",
+      "session": "app",
+      "step": "pdf-known-good"
+    },
+    {
+      "op": "read",
+      "session": "app",
+      "id": "rudra-office/pdf/canvas",
+      "save_as": "pdf-known-good"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/file-trigger"
+    },
+    {
+      "op": "wait_enabled",
+      "session": "app",
+      "id": "rudra-office/action/open"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/action/open",
+      "value": "C:\\Users\\PUBLIC_USER\\Desktop\\private-acceptance-pdf.pdf"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/action/open",
+      "value": "C:\\Users\\PUBLIC_USER\\Desktop\\private-acceptance-pdf.pdf"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/action/open"
+    },
+    {
+      "op": "wait_for_automation_id",
+      "session": "app",
+      "id": "rudra-office/document:2/tab",
+      "timeout_ms": 60000
+    },
+    {
+      "op": "wait_for_automation_id",
+      "session": "app",
+      "id": "rudra-office/pdf/canvas"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/pdf/page-input",
+      "value": "8"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/pdf/go-to-page"
+    },
+    {
+      "op": "read",
+      "session": "app",
+      "id": "rudra-office/workspace",
+      "save_as": "page8-worker-after-dispatch"
+    },
+    {
+      "op": "get_runtime_health",
+      "session": "app"
+    },
+    {
+      "op": "read",
+      "session": "app",
+      "id": "rudra-office/pdf/canvas",
+      "save_as": "page8-loading"
+    },
+    {
+      "op": "focus",
+      "session": "app",
+      "id": "rudra-office/pdf/page-input"
+    },
+    {
+      "op": "read",
+      "session": "app",
+      "id": "rudra-office/workspace",
+      "save_as": "page8-worker-after-fresh-focus"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/file-trigger"
+    },
+    {
+      "op": "wait_enabled",
+      "session": "app",
+      "id": "rudra-office/action/open"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/action/open",
+      "value": "C:\\Users\\PUBLIC_USER\\Documents\\RudraOffice\\reports\\parallel-development\\cycle2-20261012\\proposals\\WRITER-keyboard-A.docx"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/action/open"
+    },
+    {
+      "op": "wait_for_automation_id",
+      "session": "app",
+      "id": "rudra-office/document:3/tab",
+      "timeout_ms": 60000
+    },
+    {
+      "op": "wait_for_automation_id",
+      "session": "app",
+      "id": "rudra-office/document:3/writer/canonical/state"
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:3/writer/canonical/block/1/text"
+        },
+        "path": "$.value",
+        "equals": "Левый🙂",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:3/writer/canonical/block/2/text"
+        },
+        "path": "$.value",
+        "equals": "Правый😀",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "writer-A-initial-real-import"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/document:3/writer/paragraph/writer.paragraph:2"
+    },
+    {
+      "op": "press",
+      "session": "app",
+      "key": "HOME"
+    },
+    {
+      "op": "press",
+      "session": "app",
+      "key": "BACKSPACE"
+    },
+    {
+      "op": "type_text",
+      "session": "app",
+      "text": "X"
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "writer-A-native-key-and-draft"
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:3/writer/canonical/block/1/text"
+        },
+        "path": "$.value",
+        "equals": "Левый🙂Правый😀",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "op": "read",
+      "session": "app",
+      "id": "rudra-office/document:3/writer/canonical/state",
+      "save_as": "writer-A-joined-canonical"
+    },
+    {
+      "op": "hotkey",
+      "session": "app",
+      "keys": [
+        "CTRL",
+        "Z"
+      ]
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:3/writer/canonical/block/1/text"
+        },
+        "path": "$.value",
+        "equals": "Левый🙂Правый😀",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "op": "hotkey",
+      "session": "app",
+      "keys": [
+        "CTRL",
+        "Z"
+      ]
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:3/writer/canonical/block/1/text"
+        },
+        "path": "$.value",
+        "equals": "Левый🙂",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:3/writer/canonical/block/2/text"
+        },
+        "path": "$.value",
+        "equals": "Правый😀",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "op": "hotkey",
+      "session": "app",
+      "keys": [
+        "CTRL",
+        "Y"
+      ]
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:3/writer/canonical/block/1/text"
+        },
+        "path": "$.value",
+        "equals": "Левый🙂Правый😀",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "op": "hotkey",
+      "session": "app",
+      "keys": [
+        "CTRL",
+        "Y"
+      ]
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:3/writer/canonical/block/1/text"
+        },
+        "path": "$.value",
+        "equals": "Левый🙂XПравый😀",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "op": "read",
+      "session": "app",
+      "id": "rudra-office/document:3/writer/canonical/state",
+      "save_as": "writer-A-history-final"
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "writer-A-final-inline"
+    },
+    {
+      "op": "screenshot_window",
+      "session": "app",
+      "step": "writer-A-keyboard-history"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/file-trigger"
+    },
+    {
+      "op": "wait_enabled",
+      "session": "app",
+      "id": "rudra-office/action/open"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/action/open",
+      "value": "C:\\Users\\PUBLIC_USER\\Documents\\RudraOffice\\reports\\parallel-development\\cycle2-20261012\\proposals\\WRITER-keyboard-B.docx"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/action/open"
+    },
+    {
+      "op": "wait_for_automation_id",
+      "session": "app",
+      "id": "rudra-office/document:4/tab",
+      "timeout_ms": 60000
+    },
+    {
+      "op": "wait_for_automation_id",
+      "session": "app",
+      "id": "rudra-office/document:4/writer/canonical/state"
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:4/writer/canonical/block/1/text"
+        },
+        "path": "$.value",
+        "equals": "Левый🙂",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:4/writer/canonical/block/2/text"
+        },
+        "path": "$.value",
+        "equals": "Правый😀",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "writer-B-initial-real-import"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/document:4/writer/paragraph/writer.paragraph:1"
+    },
+    {
+      "op": "press",
+      "session": "app",
+      "key": "END"
+    },
+    {
+      "op": "press",
+      "session": "app",
+      "key": "DELETE"
+    },
+    {
+      "op": "type_text",
+      "session": "app",
+      "text": "Y"
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "writer-B-native-key-and-draft"
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:4/writer/canonical/block/1/text"
+        },
+        "path": "$.value",
+        "equals": "Левый🙂Правый😀",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "op": "read",
+      "session": "app",
+      "id": "rudra-office/document:4/writer/canonical/state",
+      "save_as": "writer-B-joined-canonical"
+    },
+    {
+      "op": "hotkey",
+      "session": "app",
+      "keys": [
+        "CTRL",
+        "Z"
+      ]
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:4/writer/canonical/block/1/text"
+        },
+        "path": "$.value",
+        "equals": "Левый🙂Правый😀",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "op": "hotkey",
+      "session": "app",
+      "keys": [
+        "CTRL",
+        "Z"
+      ]
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:4/writer/canonical/block/1/text"
+        },
+        "path": "$.value",
+        "equals": "Левый🙂",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:4/writer/canonical/block/2/text"
+        },
+        "path": "$.value",
+        "equals": "Правый😀",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "op": "hotkey",
+      "session": "app",
+      "keys": [
+        "CTRL",
+        "Y"
+      ]
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:4/writer/canonical/block/1/text"
+        },
+        "path": "$.value",
+        "equals": "Левый🙂Правый😀",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "op": "hotkey",
+      "session": "app",
+      "keys": [
+        "CTRL",
+        "Y"
+      ]
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:4/writer/canonical/block/1/text"
+        },
+        "path": "$.value",
+        "equals": "Левый🙂YПравый😀",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "op": "read",
+      "session": "app",
+      "id": "rudra-office/document:4/writer/canonical/state",
+      "save_as": "writer-B-history-final"
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "writer-B-final-inline"
+    },
+    {
+      "op": "screenshot_window",
+      "session": "app",
+      "step": "writer-B-keyboard-history"
+    },
+    {
+      "op": "select",
+      "session": "app",
+      "id": "rudra-office/document:3/tab"
+    },
+    {
+      "op": "wait_selected",
+      "session": "app",
+      "id": "rudra-office/document:3/tab"
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:3/writer/canonical/block/1/text"
+        },
+        "path": "$.value",
+        "equals": "Левый🙂XПравый😀",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "op": "read",
+      "session": "app",
+      "id": "rudra-office/document:3/writer/canonical/state",
+      "save_as": "writer-A-tab-return"
+    },
+    {
+      "op": "type_text",
+      "session": "app",
+      "text": "R"
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "writer-A-restored-native-draft"
+    },
+    {
+      "op": "hotkey",
+      "session": "app",
+      "keys": [
+        "CTRL",
+        "Z"
+      ]
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:3/writer/canonical/block/1/text"
+        },
+        "path": "$.value",
+        "equals": "Левый🙂XПравый😀",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "op": "hotkey",
+      "session": "app",
+      "keys": [
+        "CTRL",
+        "Y"
+      ]
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:3/writer/canonical/block/1/text"
+        },
+        "path": "$.value",
+        "equals": "Левый🙂XRПравый😀",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "writer-A-restored-native-redo"
+    },
+    {
+      "op": "hotkey",
+      "session": "app",
+      "keys": [
+        "CTRL",
+        "Z"
+      ]
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:3/writer/canonical/block/1/text"
+        },
+        "path": "$.value",
+        "equals": "Левый🙂XПравый😀",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "op": "select",
+      "session": "app",
+      "id": "rudra-office/document:4/tab"
+    },
+    {
+      "op": "wait_selected",
+      "session": "app",
+      "id": "rudra-office/document:4/tab"
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:4/writer/canonical/block/1/text"
+        },
+        "path": "$.value",
+        "equals": "Левый🙂YПравый😀",
+        "timeout_ms": 5000,
+        "max_iterations": 30,
+        "interval_ms": 100
+      }
+    },
+    {
+      "op": "select",
+      "session": "app",
+      "id": "rudra-office/document:2/tab"
+    },
+    {
+      "op": "wait_selected",
+      "session": "app",
+      "id": "rudra-office/document:2/tab"
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/pdf/canvas"
+        },
+        "path": "$.value",
+        "contains_any": [
+          "drawn_rasters=8"
+        ],
+        "timeout_ms": 120000,
+        "max_iterations": 300,
+        "interval_ms": 200
+      }
+    },
+    {
+      "op": "read",
+      "session": "app",
+      "id": "rudra-office/pdf/canvas",
+      "save_as": "page8-actual-drawn"
+    },
+    {
+      "op": "screenshot_window",
+      "session": "app",
+      "step": "pdf-real-page8"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/file-trigger"
+    },
+    {
+      "op": "wait_enabled",
+      "session": "app",
+      "id": "rudra-office/action/open"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/action/open",
+      "value": "C:\\Users\\PUBLIC_USER\\Desktop\\Шушары\\Точки подключения принторов и зарядки техники (1).pptx"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/action/open",
+      "value": "C:\\Users\\PUBLIC_USER\\Desktop\\Шушары\\Точки подключения принторов и зарядки техники (1).pptx"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/action/open"
+    },
+    {
+      "op": "wait_for_automation_id",
+      "session": "app",
+      "id": "rudra-office/document:5/tab",
+      "timeout_ms": 60000
+    },
+    {
+      "op": "wait_for_automation_id",
+      "session": "app",
+      "id": "rudra-office/slides"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/slides/next"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/slides/next"
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:5/slides/selection-state"
+        },
+        "path": "$.value",
+        "contains_any": [
+          "slide_id=3;object_id=none"
+        ],
+        "timeout_ms": 60000,
+        "max_iterations": 300,
+        "interval_ms": 200
+      }
+    },
+    {
+      "op": "wait_for_automation_id",
+      "session": "app",
+      "id": "rudra-office/document:5/slides/slide/3/object/2"
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "slide3-before-selection"
+    },
+    {
+      "op": "click_relative",
+      "session": "app",
+      "id": "rudra-office/document:5/slides/slide/3/object/2",
+      "position": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:5/slides/selection-state"
+        },
+        "path": "$.value",
+        "contains_any": [
+          "slide_id=3;object_id=2"
+        ],
+        "timeout_ms": 60000,
+        "max_iterations": 300,
+        "interval_ms": 200
+      }
+    },
+    {
+      "op": "wait_for_automation_id",
+      "session": "app",
+      "id": "rudra-office/document:5/slides/selection-bounds"
+    },
+    {
+      "op": "read",
+      "session": "app",
+      "id": "rudra-office/document:5/slides/selection-bounds",
+      "save_as": "slide3-drawn-selection"
+    },
+    {
+      "op": "screenshot_window",
+      "session": "app",
+      "step": "slides-real-slide3-selection"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/slides/next"
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:5/slides/selection-state"
+        },
+        "path": "$.value",
+        "contains_any": [
+          "slide_id=4;object_id=none"
+        ],
+        "timeout_ms": 60000,
+        "max_iterations": 300,
+        "interval_ms": 200
+      }
+    },
+    {
+      "op": "wait_for_automation_id",
+      "session": "app",
+      "id": "rudra-office/document:5/slides/slide/4/object/2"
+    },
+    {
+      "op": "wait_disabled",
+      "session": "app",
+      "id": "rudra-office/home/slides/text-color"
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "slide4-selection-cleared"
+    },
+    {
+      "op": "screenshot_window",
+      "session": "app",
+      "step": "slides-real-slide4-clear"
+    },
+    {
+      "op": "click_relative",
+      "session": "app",
+      "id": "rudra-office/document:5/slides/slide/4/object/2",
+      "position": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:5/slides/selection-state"
+        },
+        "path": "$.value",
+        "contains_any": [
+          "slide_id=4;object_id=2"
+        ],
+        "timeout_ms": 60000,
+        "max_iterations": 300,
+        "interval_ms": 200
+      }
+    },
+    {
+      "op": "screenshot_window",
+      "session": "app",
+      "step": "slides-real-slide4-selection"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/slides/previous"
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/document:5/slides/selection-state"
+        },
+        "path": "$.value",
+        "contains_any": [
+          "slide_id=3;object_id=none"
+        ],
+        "timeout_ms": 60000,
+        "max_iterations": 300,
+        "interval_ms": 200
+      }
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "slide3-return-no-stale-outline"
+    },
+    {
+      "op": "select",
+      "session": "app",
+      "id": "rudra-office/document:2/tab"
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/pdf/canvas"
+        },
+        "path": "$.value",
+        "contains_any": [
+          "session_id=2;backend_id=2;page=8;status=Ready;scale=1;"
+        ],
+        "timeout_ms": 60000,
+        "max_iterations": 300,
+        "interval_ms": 200
+      }
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "pdf-lifecycle-before-zoom"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/pdf/zoom-in"
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/pdf/canvas"
+        },
+        "path": "$.value",
+        "contains_any": [
+          "session_id=2;backend_id=2;page=8;status=Loading;scale=1.25;"
+        ],
+        "timeout_ms": 60000,
+        "max_iterations": 300,
+        "interval_ms": 200
+      }
+    },
+    {
+      "op": "focus",
+      "session": "app",
+      "id": "rudra-office/pdf/page-input"
+    },
+    {
+      "op": "read",
+      "session": "app",
+      "id": "rudra-office/workspace"
+    },
+    {
+      "op": "screenshot_window",
+      "session": "app",
+      "step": "pdf-page8-zoom-new-request-loading"
+    },
+    {
+      "op": "select",
+      "session": "app",
+      "id": "rudra-office/document:1/tab"
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/pdf/canvas"
+        },
+        "path": "$.value",
+        "contains_any": [
+          "session_id=1;backend_id=1;page=1;status=Ready;scale=1;"
+        ],
+        "timeout_ms": 60000,
+        "max_iterations": 300,
+        "interval_ms": 200
+      }
+    },
+    {
+      "op": "focus",
+      "session": "app",
+      "id": "rudra-office/pdf/page-input"
+    },
+    {
+      "op": "read",
+      "session": "app",
+      "id": "rudra-office/workspace"
+    },
+    {
+      "op": "select",
+      "session": "app",
+      "id": "rudra-office/document:2/tab"
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/pdf/canvas"
+        },
+        "path": "$.value",
+        "contains_any": [
+          "session_id=2;backend_id=2;page=8;status=Loading;scale=1.25;"
+        ],
+        "timeout_ms": 60000,
+        "max_iterations": 300,
+        "interval_ms": 200
+      }
+    },
+    {
+      "op": "focus",
+      "session": "app",
+      "id": "rudra-office/pdf/page-input"
+    },
+    {
+      "op": "read",
+      "session": "app",
+      "id": "rudra-office/workspace"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/document:2/tab/close"
+    },
+    {
+      "op": "select",
+      "session": "app",
+      "id": "rudra-office/document:1/tab"
+    },
+    {
+      "session": "app",
+      "repeat_until": {
+        "operation": "read",
+        "arguments": {
+          "id": "rudra-office/pdf/canvas"
+        },
+        "path": "$.value",
+        "contains_any": [
+          "session_id=1;backend_id=1;page=1;status=Ready;scale=1;"
+        ],
+        "timeout_ms": 60000,
+        "max_iterations": 300,
+        "interval_ms": 200
+      }
+    },
+    {
+      "op": "focus",
+      "session": "app",
+      "id": "rudra-office/pdf/page-input"
+    },
+    {
+      "op": "read",
+      "session": "app",
+      "id": "rudra-office/workspace"
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "pdf-closed-2-active-1-actual-tree"
+    },
+    {
+      "op": "screenshot_window",
+      "session": "app",
+      "step": "pdf-close-busy-other-document-remains"
+    },
+    {
+      "op": "get_runtime_health",
+      "session": "app"
+    },
+    {
+      "op": "get_runtime_health",
+      "session": "app"
+    },
+    {
+      "op": "get_runtime_stderr",
+      "session": "app"
+    },
+    {
+      "op": "windows_export_evidence",
+      "session": "app"
+    }
+  ],
+  "teardown": [
+    {
+      "op": "session.close",
+      "session": "app"
+    }
+  ]
+}

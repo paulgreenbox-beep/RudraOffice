@@ -1,0 +1,10 @@
+[package]
+name = "slides-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+slides-api = { path = "../slides-api" }
+
+[dev-dependencies]

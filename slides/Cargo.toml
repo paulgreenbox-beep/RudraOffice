@@ -1,0 +1,14 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/slides-api",
+    "crates/slides-core",
+    "crates/slides-canvas",
+    "crates/slides-pptx-adapter",
+    "crates/slides-ui",
+]
+
+[workspace.package]
+edition = "2024"
+license = "MIT"
+version = "0.1.0"

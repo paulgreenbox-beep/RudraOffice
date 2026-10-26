@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "name": "rudra-policy-frozen-artifact-smoke",
+  "application": {
+    "command": "C:\\Users\\PUBLIC_USER\\Documents\\RudraOffice\\releases\\rc28\\rudra-office-app.exe",
+    "window_title": "Rudra Office"
+  },
+  "options": {
+    "stop_on_error": true,
+    "evidence_on_failure": true
+  },
+  "steps": [
+    {
+      "op": "session.open",
+      "save_session_as": "app"
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "inspect-1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/new-xlsx"
+    },
+    {
+      "op": "wait_for_automation_id",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/grid"
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "inspect-4"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "A1:A1"
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "inspect-6"
+    },
+    {
+      "op": "screenshot_window",
+      "session": "app",
+      "step": "final"
+    },
+    {
+      "op": "get_runtime_health",
+      "session": "app"
+    },
+    {
+      "op": "get_runtime_stderr",
+      "session": "app"
+    },
+    {
+      "op": "windows_export_evidence",
+      "session": "app"
+    }
+  ],
+  "teardown": [
+    {
+      "op": "session.close",
+      "session": "app"
+    }
+  ]
+}

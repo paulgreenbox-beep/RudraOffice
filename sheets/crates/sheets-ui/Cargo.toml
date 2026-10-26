@@ -1,0 +1,10 @@
+[package]
+name = "sheets-ui"
+version.workspace = true
+edition = "2024"
+license.workspace = true
+
+[dependencies]
+sheets-api = { path = "../sheets-api" }
+sheets-grid = { path = "../sheets-grid" }
+sheets-core = { path = "../sheets-core" }

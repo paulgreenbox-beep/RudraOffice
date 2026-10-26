@@ -1,0 +1,13 @@
+[package]
+name = "slides-ui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+slides-api = { path = "../slides-api" }
+slides-canvas = { path = "../slides-canvas" }
+slides-core = { path = "../slides-core" }
+
+[dev-dependencies]
+slides-pptx-adapter = { path = "../slides-pptx-adapter" }

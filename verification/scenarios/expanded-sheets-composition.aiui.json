@@ -1,0 +1,2129 @@
+{
+  "version": 1,
+  "name": "rudra-policy-expanded-sheets-composition",
+  "application": {
+    "command": "C:\\Users\\PUBLIC_USER\\Documents\\RudraOffice\\releases\\rc28\\rudra-office-app.exe",
+    "window_title": "Rudra Office"
+  },
+  "options": {
+    "stop_on_error": true,
+    "evidence_on_failure": true
+  },
+  "steps": [
+    {
+      "op": "session.open",
+      "save_session_as": "app"
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "inspect-1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/new-xlsx"
+    },
+    {
+      "op": "wait_for_automation_id",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/grid"
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "inspect-4"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "A1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "A1:A1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "5"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-apply"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "5"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "B2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "B2:B2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "9"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-apply"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "9"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "A1:B2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "A1:B2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "activate_window",
+      "session": "app"
+    },
+    {
+      "op": "focus",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/grid"
+    },
+    {
+      "op": "inspect_spatial_target",
+      "session": "app",
+      "id": "rudra-office/document:1/cell:1:0:0"
+    },
+    {
+      "op": "inspect_spatial_target",
+      "session": "app",
+      "id": "rudra-office/document:1/cell:1:1:1"
+    },
+    {
+      "op": "pointer_down",
+      "session": "app",
+      "id": "rudra-office/document:1/cell:1:0:0",
+      "position": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "button": "left"
+    },
+    {
+      "op": "read",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection"
+    },
+    {
+      "op": "move_pointer",
+      "session": "app",
+      "id": "rudra-office/document:1/cell:1:1:1",
+      "position": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "op": "read",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection"
+    },
+    {
+      "op": "pointer_up",
+      "session": "app",
+      "button": "left"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "A1:B2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/clear-range"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "A1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "A1:A1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": ""
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "B2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "B2:B2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": ""
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/undo"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "A1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "A1:A1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "5"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "B2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "B2:B2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "9"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/redo"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "A1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "A1:A1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": ""
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "B2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "B2:B2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": ""
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "A1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "A1:A1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "ID"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-apply"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "ID"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "B1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "B1:B1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "Status"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-apply"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "Status"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "C1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "C1:C1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "Formula"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-apply"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "Formula"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "A2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "A2:A2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "3"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-apply"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "3"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "B2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "B2:B2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "Active"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-apply"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "Active"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "C2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "C2:C2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "=A2*10"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-apply"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "=A2*10"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "A3"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "A3:A3"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-apply"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "B3"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "B3:B3"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "Inactive"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-apply"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "Inactive"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "C3"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "C3:C3"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "=A3*10"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-apply"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "=A3*10"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "A4"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "A4:A4"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-apply"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "B4"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "B4:B4"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "Active"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-apply"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "Active"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "C4"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "C4:C4"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "=A4*10"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-apply"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "=A4*10"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "A1:C4"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "A1:C4"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/key-column",
+      "value": "A"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/has-header",
+      "value": "Есть заголовок"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/sort-ascending"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "A2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "A2:A2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "B2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "B2:B2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "Inactive"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "C2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "C2:C2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "=A2*10"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "A1:C4"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "A1:C4"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/key-column",
+      "value": "B"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/filter-kind",
+      "value": "Равно"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/filter-value",
+      "value": "Active"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/apply-auto-filter"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/filter-hidden-rows",
+      "value": "2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "A1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "A1:A1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "activate_window",
+      "session": "app"
+    },
+    {
+      "op": "focus",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/grid"
+    },
+    {
+      "op": "press",
+      "session": "app",
+      "key": "DOWN"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection/active",
+      "value": "A3"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/clear-auto-filter"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/filter-hidden-rows",
+      "value": ""
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "A3:C4"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "A3:C4"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/copy"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "A8"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "A8:A8"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/paste"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "A8"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "A8:A8"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "C8"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "C8:C8"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "=A8*10"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "G1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "G1:G1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "10"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-apply"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "10"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "H1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "H1:H1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "=G1*2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-apply"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "=G1*2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "G1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "G1:G1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/insert-trigger"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/insert-rows"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "G2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "G2:G2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "10"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "H2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "H2:H2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "=G2*2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/undo"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "G1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "G1:G1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "10"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "H1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "H1:H1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "=G1*2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "G1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "G1:G1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/insert-trigger"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/insert-columns"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "H1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "H1:H1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "10"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "I1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "I1:I1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "=H1*2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/undo"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "G1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "G1:G1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "10"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "H1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "H1:H1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "=G1*2"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "K1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "K1:K1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "Alpha"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-apply"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "Alpha"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/undo"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/file-trigger"
+    },
+    {
+      "op": "wait_idle",
+      "session": "app",
+      "timeout_ms": 5000
+    },
+    {
+      "op": "wait_enabled",
+      "session": "app",
+      "id": "rudra-office/action/open"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/action/open",
+      "value": "C:\\Users\\PUBLIC_USER\\Documents\\RudraOffice\\reports\\evidence\\sheets-selection-undo-20261006\\cross-document-copy.xlsx"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/action/open",
+      "value": "C:\\Users\\PUBLIC_USER\\Documents\\RudraOffice\\reports\\evidence\\sheets-selection-undo-20261006\\cross-document-copy.xlsx"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/action/open"
+    },
+    {
+      "op": "wait_for_automation_id",
+      "session": "app",
+      "id": "rudra-office/document:2/tab"
+    },
+    {
+      "op": "wait_for_automation_id",
+      "session": "app",
+      "id": "rudra-office/document:2/sheets/grid"
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "inspect-348"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "A1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:2/sheets/selection",
+      "value": "A1:A1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "read",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "save_as": "doc2_baseline"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "Beta"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-apply"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "Beta"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/undo"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "${doc2_baseline.value}"
+    },
+    {
+      "op": "select",
+      "session": "app",
+      "id": "rudra-office/document:1/tab"
+    },
+    {
+      "op": "wait_selected",
+      "session": "app",
+      "id": "rudra-office/document:1/tab"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/redo"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "K1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:1/sheets/selection",
+      "value": "K1:K1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "Alpha"
+    },
+    {
+      "op": "select",
+      "session": "app",
+      "id": "rudra-office/document:2/tab"
+    },
+    {
+      "op": "wait_selected",
+      "session": "app",
+      "id": "rudra-office/document:2/tab"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/data-trigger"
+    },
+    {
+      "op": "set_value",
+      "session": "app",
+      "id": "rudra-office/sheets/address-input",
+      "value": "A1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/ribbon/go-to-range"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/document:2/sheets/selection",
+      "value": "A1:A1"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/menu/home-trigger"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "${doc2_baseline.value}"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/home/sheets/redo"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "Beta"
+    },
+    {
+      "op": "click",
+      "session": "app",
+      "id": "rudra-office/document:1/tab/close"
+    },
+    {
+      "op": "wait_hidden",
+      "session": "app",
+      "id": "rudra-office/document:1/tab"
+    },
+    {
+      "op": "wait_selected",
+      "session": "app",
+      "id": "rudra-office/document:2/tab"
+    },
+    {
+      "op": "wait_for_value",
+      "session": "app",
+      "id": "rudra-office/home/sheets/cell-value",
+      "value": "Beta"
+    },
+    {
+      "op": "inspect_ui",
+      "session": "app",
+      "save_as": "inspect-383"
+    },
+    {
+      "op": "screenshot_window",
+      "session": "app",
+      "step": "final"
+    },
+    {
+      "op": "get_runtime_health",
+      "session": "app"
+    },
+    {
+      "op": "get_runtime_stderr",
+      "session": "app"
+    },
+    {
+      "op": "windows_export_evidence",
+      "session": "app"
+    }
+  ],
+  "teardown": [
+    {
+      "op": "session.close",
+      "session": "app"
+    }
+  ]
+}

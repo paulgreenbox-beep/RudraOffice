@@ -1,0 +1,8 @@
+[package]
+name = "sheets-ironcalc-adapter"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ironcalc = { path = "../../../vendor/ironcalc/xlsx" }
+sheets-core = { path = "../sheets-core" }

@@ -1,0 +1,11 @@
+[package]
+name = "slides-canvas"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[dependencies]
+slides-api = { path = "../slides-api" }
+slides-core = { path = "../slides-core" }
+
+[dev-dependencies]

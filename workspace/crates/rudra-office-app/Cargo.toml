@@ -1,0 +1,48 @@
+[package]
+name = "rudra-office-app"
+version = "0.1.0-rc29"
+edition.workspace = true
+license.workspace = true
+build = "build.rs"
+
+[features]
+legacy-writer-canvas = []
+
+[dependencies]
+rudra-office-launcher = { path = "../rudra-office-launcher" }
+makepad-widgets = { path = "../../../../Rust_Makepad_Toolkit/.deps/makepad/widgets", version = "2.0.0" }
+office-ui-runtime = { path = "../office-ui-runtime" }
+rudra-runtime = { path = "../../../../Rust_Makepad_Toolkit/crates/rudra-runtime" }
+sheets-api = { path = "../../../sheets/crates/sheets-api" }
+sheets-core = { path = "../../../sheets/crates/sheets-core" }
+sheets-grid = { path = "../../../sheets/crates/sheets-grid" }
+sheets-ironcalc-adapter = { path = "../../../sheets/crates/sheets-ironcalc-adapter" }
+sheets-xlsx = { path = "../../../sheets/crates/sheets-xlsx" }
+sheets-ui = { path = "../../../sheets/crates/sheets-ui" }
+writer-api = { path = "../../../writer/crates/writer-api" }
+writer-rudra-adapter = { path = "../../../writer/crates/writer-rudra-adapter" }
+writer-ui = { path = "../../../writer/crates/writer-ui" }
+pdf-core = { path = "../../../pdf/crates/pdf-core" }
+pdf-oxide-adapter = { path = "../../../pdf/crates/pdf-oxide-adapter" }
+slides-api = { path = "../../../slides/crates/slides-api" }
+slides-core = { path = "../../../slides/crates/slides-core" }
+slides-canvas = { path = "../../../slides/crates/slides-canvas" }
+slides-ui = { path = "../../../slides/crates/slides-ui" }
+slides-pptx-adapter = { path = "../../../slides/crates/slides-pptx-adapter" }
+
+[target.'cfg(windows)'.dependencies]
+toolkit-windows-automation = { path = "../../../../Rust_Makepad_Toolkit/crates/toolkit-windows-automation" }
+windows-uia = { package = "windows", version = "0.61.3", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_System_DataExchange",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_Memory",
+    "Win32_System_Ole",
+    "Win32_System_Threading",
+    "Win32_UI_Controls_Dialogs",
+    "Win32_UI_HiDpi",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }
