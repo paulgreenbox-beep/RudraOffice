@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "status": "PUBLICATION — COMPLETE",
+  "designation": "Initial Public Source Baseline",
+  "recorded_at": "2026-10-26T21:50:23.687Z",
+  "local_calendar_date": "2026-10-27 Europe/Moscow",
+  "github": {
+    "owner": "paulgreenbox-beep",
+    "repository": "RudraOffice",
+    "url": "https://github.com/paulgreenbox-beep/RudraOffice",
+    "visibility": "PUBLIC",
+    "default_branch": "main",
+    "initial_commit_sha": "8766b97b3648aab124a0ecb02e7437aa00b5197f",
+    "initial_tree_sha": "d0b18d7f6d86781a9dd541fcfbd56aa85b53350d",
+    "initial_commit_message": "Initial public source release of Rudra Office",
+    "anonymous_initial_verification_at": "2026-10-26T21:47:31.626Z",
+    "verified_initial_remote_head": "8766b97b3648aab124a0ecb02e7437aa00b5197f"
+  },
+  "source": {
+    "initial_public_files": 1449,
+    "initial_git_blob_bytes": 32698922,
+    "components": [
+      "Writer",
+      "Sheets",
+      "Slides",
+      "PDF",
+      "Shared application",
+      "Standalone launcher",
+      "Runtime/session facade",
+      "Adapters",
+      "Cargo manifests and lockfiles",
+      "Tests",
+      "Verification tooling",
+      "Documentation"
+    ],
+    "nested_gitlinks": 0,
+    "toolkit_duplicated": false,
+    "makepad_duplicated": false,
+    "engines": [
+      "IronCalc",
+      "Office Oxide",
+      "PDFOxide"
+    ],
+    "dependency_contract": "docs/BUILDING.md"
+  },
+  "license": {
+    "first_party": "MIT",
+    "holder": "paulgreenbox-beep and Rudra Office contributors",
+    "year": 2026,
+    "third_party_notices": "THIRD_PARTY_NOTICES.md",
+    "technical_inventory": "third_party/source-inventory.json",
+    "transitive_legal_clearance": false
+  },
+  "security": {
+    "pattern_scan_status": "PASS",
+    "unresolved_findings": 0,
+    "source_allowlist_matched": true,
+    "prohibited_public_files": 0,
+    "user_documents_uploaded": false,
+    "personal_identifiers_removed_from_examples": true,
+    "original_private_corpus_included": false,
+    "secret_values_logged": false,
+    "scanning_scope": "Pattern-based credentials/private-key/privacy scan plus allowlist/manual review, not an absolute guarantee"
+  },
+  "build": {
+    "cargo_metadata_results": [
+      {
+        "manifest": "workspace/Cargo.toml",
+        "exit_code": 0
+      },
+      {
+        "manifest": "writer/Cargo.toml",
+        "exit_code": 0
+      },
+      {
+        "manifest": "sheets/Cargo.toml",
+        "exit_code": 0
+      },
+      {
+        "manifest": "slides/Cargo.toml",
+        "exit_code": 0
+      },
+      {
+        "manifest": "pdf/crates/pdf-core/Cargo.toml",
+        "exit_code": 0
+      },
+      {
+        "manifest": "pdf/crates/pdf-oxide-adapter/Cargo.toml",
+        "exit_code": 0
+      }
+    ],
+    "clean_public_checkout_build": "NOT_VERIFIED",
+    "full_compile_clippy_tests": "NOT_RUN_BY_THIS_PUBLICATION",
+    "ci": "NOT_CONFIGURED_UNTIL_PORTABLE_BOOTSTRAP_IS_QUALIFIED",
+    "portable_blockers": [
+      "Development Toolkit has unpublished changes; verification-economy core absent from pinned public tree",
+      "Actual local Makepad SDK revision unverified; documented public bootstrap pin not app-qualified",
+      "Private or missing binary fixtures referenced by unchanged include_bytes! tests"
+    ]
+  },
+  "preservation": {
+    "selected_original_source_hashes_checked": 1439,
+    "selected_original_changes": 0,
+    "original_fixture_hashes_unchanged": true,
+    "frozen_executables_checked": 7,
+    "frozen_executables_unchanged": true,
+    "nested_slides_git_preserved": true,
+    "original_root_git_absent": true,
+    "original_working_copy_modified_by_publication": false
+  },
+  "release": {
+    "production_accepted": false,
+    "release_tag_created": false,
+    "github_release_created": false,
+    "executables_published": false,
+    "product_status": "PARALLEL CYCLE 2 — PARTIAL"
+  },
+  "receipt_scope": "This receipt records the anonymously verified initial source push. A later documentation-only commit publishes this receipt; it does not claim a self-referential hash for itself."
+}

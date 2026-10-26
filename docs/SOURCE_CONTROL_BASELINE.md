@@ -2,7 +2,7 @@
 
 Public source snapshot prepared in an isolated publication directory. The original development tree, nested Slides repository, working changes, private documents, evidence and frozen executables are not moved or rewritten.
 
-Publication verification and the initial commit identity will be recorded in reports/github-publication-2026-10-27.json after the first real public push. A local commit alone is not publication success.
+The first public push was verified without authentication on 2026-10-27 Europe/Moscow (2026-10-26 UTC). Initial commit: `8766b97b3648aab124a0ecb02e7437aa00b5197f`, message `Initial public source release of Rudra Office`. Repository: https://github.com/paulgreenbox-beep/RudraOffice, PUBLIC, default branch main. The first source tree contains 1,449 files. Publication report and machine-readable receipt: reports/github-publication-2026-10-27.md and reports/github-publication-2026-10-27.json. A following documentation-only commit records that observed initial push; it is not a rewritten initial commit or a production release.
 
 Development workflow after publication:
 
