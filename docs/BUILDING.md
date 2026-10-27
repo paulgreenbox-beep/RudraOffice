@@ -54,6 +54,15 @@ Core candidate above. The missing `verification/inputs/RC28-closure.json` is
 restored as first-party planning data: it contains historical PARTIAL hashes
 and relative report paths, not private documents or a new accepted run.
 
+A separate **manual candidate qualification**, not a required product CI check,
+can be requested by a maintainer applying `public-windows-qualification` to a
+same-repository PR. It uses the exact public Toolkit/Makepad candidates and
+isolated Rust 1.97.1 on a fresh Windows runner. Identity and resource checks and
+locked metadata precede the locked app/launcher build. A failed run records the
+first unresolved compatibility boundary; it does not qualify the proposed SDK.
+No desktop GUI or EXE upload/release is performed. Reviewed production pins
+remain unset until consumer review and actual qualification establish them.
+
 ## Windows requirements
 
 - Windows 10/11, x64, Git and PowerShell.

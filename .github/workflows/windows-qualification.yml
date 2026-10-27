@@ -1,0 +1,71 @@
+name: Windows dependency qualification (manual)
+on:
+  pull_request:
+    types: [labeled]
+permissions:
+  contents: read
+jobs:
+  candidate-build:
+    if: github.event.label.name == 'public-windows-qualification' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '1'
+      CARGO_INCREMENTAL: '0'
+      CARGO_TARGET_DIR: ${{ runner.temp }}/rudra-public-target
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: RudraOffice
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: paulgreenbox-beep/rust-makepad-toolkit
+          ref: a3452ac231a2b61d532739203fd1d2f2e3de4e8c
+          path: Rust_Makepad_Toolkit
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: makepad/makepad
+          ref: 105158e08c89d47f57af4621420ed68eb3a147ce
+          path: Rust_Makepad_Toolkit/.deps/makepad
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Candidate source identities and unchanged Core pins
+        working-directory: RudraOffice
+        run: |
+          node --input-type=module -e "import {inspectRepository} from './tools/public-dependency-verification.mjs';const specs=[['../Rust_Makepad_Toolkit','https://github.com/paulgreenbox-beep/rust-makepad-toolkit.git','a3452ac231a2b61d532739203fd1d2f2e3de4e8c'],['../Rust_Makepad_Toolkit/.deps/makepad','https://github.com/makepad/makepad.git','105158e08c89d47f57af4621420ed68eb3a147ce']];for(const [root,repository,reviewed_revision] of specs){const state=inspectRepository(root,{repository,reviewed_revision});console.log(JSON.stringify({root,...state}));if(state.issues.length)process.exitCode=1;}"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node tools/verification-policy.mjs validate --root .
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git rev-parse HEAD
+      - name: Install isolated exact Rust toolchain (no global default change)
+        run: |
+          rustup toolchain install 1.97.1 --profile minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          rustup run 1.97.1 rustc -Vv
+          rustup run 1.97.1 cargo -V
+      - name: Resource admission
+        run: |
+          $os = Get-CimInstance Win32_OperatingSystem
+          $available = [math]::Floor($os.FreePhysicalMemory / 1024)
+          $compilers = @(Get-Process cargo,rustc,link -ErrorAction SilentlyContinue).Count
+          [pscustomobject]@{available_ram_mib=$available;active_compilers=$compilers;minimum_ram_mib=2048} | ConvertTo-Json
+          if ($available -lt 2048 -or $compilers -ne 0) { throw 'Cargo resource admission blocked' }
+      - name: Locked dependency graph before compilation
+        working-directory: RudraOffice/workspace
+        run: |
+          rustup run 1.97.1 cargo metadata --locked --format-version 1 --no-deps > public-cargo-metadata.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-FileHash Cargo.lock -Algorithm SHA256
+      - name: Candidate application and launcher build (not GUI/release acceptance)
+        working-directory: RudraOffice/workspace
+        run: |
+          rustup run 1.97.1 cargo build --locked -j 1 -p rudra-office-app -p rudra-office-launcher
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-FileHash (Join-Path $env:CARGO_TARGET_DIR 'debug/rudra-office-app.exe') -Algorithm SHA256
+          Get-FileHash (Join-Path $env:CARGO_TARGET_DIR 'debug/rudra-office-launcher.exe') -Algorithm SHA256
+      # Deliberately no desktop actions, GUI certification, binary upload or Release.
