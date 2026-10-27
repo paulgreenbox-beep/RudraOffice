@@ -5,6 +5,7 @@
   "fixtures": [
     {"path":"writer/synthetic-basic.docx","generator":"tools/generate-public-writer-fixtures.mjs","bytes":3768,"sha256":"455564747738C27E283E838851E9CA3A408140E85B44754E611AB8B4C0CA5A6D"},
     {"path":"writer/synthetic-rich.docx","generator":"tools/generate-public-writer-fixtures.mjs","bytes":5372,"sha256":"ED629529B218B08CB8A22815A37861585CEEE8532701AFA6D35BEC1C556D0733"},
+    {"path":"writer/synthetic-grid.docx","generator":"tools/generate-public-writer-fixtures.mjs","bytes":6755,"sha256":"047DDE71472837C8878BDF9CEBC09F1D48812E0D4E8B38E67354AF7758DC84C8"},
     {"path":"pdf/cid-unicode-space-control.pdf","generator":"tools/generate-public-pdf-fixtures.mjs","bytes":2672,"sha256":"369ADBFA5FF98F3A8B2DCDDD49195E5D81492C5A0B4768C52B09C0FFCB541D11"},
     {"path":"pdf/cid-unicode-space-tw.pdf","generator":"tools/generate-public-pdf-fixtures.mjs","bytes":2672,"sha256":"67B97A0F629E89BCF6B27E483BA55441F2D7F0C8AA69C48BD611B2642CE5DEE8"},
     {"path":"pdf/cid-cyrillic.pdf","generator":"tools/generate-public-pdf-fixtures.mjs","bytes":2672,"sha256":"96189B320CE97A708DA7DF03163892FCD5976604AA3FB6CE0CDCE8D95A3D9566"},

@@ -1,6 +1,6 @@
 # Public synthetic regression corpus
 
-These seven files are authored entirely by the checked-in generators. They are
+These eight files are authored entirely by the checked-in generators. They are
 first-party MIT test data under the repository LICENSE, not reduced user files.
 No private document, external font program, stock image, screenshot or recovery
 dump is an input. CRC/xref offsets and fixed ZIP metadata are generated from
@@ -8,7 +8,7 @@ code; no clock, username, random identifier or machine path enters the bytes.
 
 | Files | Generator / provenance | Substantive coverage |
 | --- | --- | --- |
-| `writer/synthetic-basic.docx`, `synthetic-rich.docx` | `tools/generate-public-writer-fixtures.mjs`; fixed OOXML and self-created pixel PNG | Cyrillic/emoji paragraphs, runs, page break, sections, imported header/footer, table/image, canonical edit/history and supported export tests |
+| `writer/synthetic-basic.docx`, `synthetic-rich.docx`, `synthetic-grid.docx` | `tools/generate-public-writer-fixtures.mjs`; fixed OOXML and self-created pixel PNG | Cyrillic/emoji paragraphs, runs, page break, sections, imported header/footer, table/image, canonical history/export; additional 4-row/3-column grid retains public multi-row/column render-plan coverage |
 | `pdf/cid-unicode-space-control.pdf`, `cid-unicode-space-tw.pdf`, `cid-cyrillic.pdf` | `tools/generate-public-pdf-fixtures.mjs`; self-defined TrueType glyphs/metrics and PDF objects | Two-byte Identity-H CID/word-spacing regression and non-ASCII ToUnicode extraction; synthetic outlines are not a typography specimen |
 | `slides/controlled-projection.pptx`, `supported-roundtrip.pptx` | `tools/generate-public-slides-fixtures.mjs`; fixed OOXML and self-created PNG | Three-slide shape/table/unknown-graphic regression; two-slide text/geometry/PNG import-export and selection |
 
@@ -24,7 +24,7 @@ node tools/generate-public-slides-fixtures.mjs --check
 ```
 
 Normal generation refuses differing existing fixture bytes. The Slides tool's
-explicit `--force` is not used by verification. Keep the seven exact `.gitignore`
+explicit `--force` is not used by verification. Keep the eight exact `.gitignore`
 exceptions; do not replace them with a blanket document-format allowlist.
 
 Sheets already has in-memory synthetic formula/style/merge/clipboard/structural

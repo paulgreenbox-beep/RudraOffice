@@ -115,15 +115,20 @@ function imageParagraph() {
   return `<w:p><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="1" name="Synthetic public sample" descr="Generated one-pixel color sample"/><wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr><a:graphic><a:graphicData uri="${PIC}"><pic:pic><pic:nvPicPr><pic:cNvPr id="0" name="synthetic.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rId3"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;
 }
 
-function tableXml() {
+function tableXml(grid = false) {
+  if (grid) {
+    const cell = (text) => `<w:tc><w:tcPr><w:tcW w:w="2400" w:type="dxa"/></w:tcPr><w:p>${run(text)}</w:p></w:tc>`;
+    const rows = Array.from({length: 4}, (_, r) => `<w:tr>${Array.from({length: 3}, (_, c) => cell(`Ячейка ${r + 1}.${c + 1}`)).join('')}</w:tr>`).join('');
+    return `<w:tbl><w:tblPr><w:tblW w:w="7200" w:type="dxa"/></w:tblPr><w:tblGrid>${'<w:gridCol w:w="2400"/>'.repeat(3)}</w:tblGrid>${rows}</w:tbl>`;
+  }
   const cell = (text) => `<w:tc><w:tcPr><w:tcW w:w="3600" w:type="dxa"/></w:tcPr><w:p>${run(text)}</w:p></w:tc>`;
   return `<w:tbl><w:tblPr><w:tblW w:w="7200" w:type="dxa"/></w:tblPr><w:tblGrid><w:gridCol w:w="3600"/><w:gridCol w:w="3600"/></w:tblGrid><w:tr>${cell('Тестовая ячейка')}${cell('42')}</w:tr></w:tbl>`;
 }
 
-function documentXml({ rich }) {
+function documentXml({ rich, grid = false }) {
   const p1 = `<w:p>${run('Рассвет ', { bold: true, color: '0057B8' })}${run('🙂на орбите', { italic: true })}</w:p>`;
   const p2 = `<w:p>${run('Учебная ')}${run('страница ', { underline: true })}${run('😀', { bold: true, color: '0057B8' })}</w:p>`;
-  const extras = rich ? `${tableXml()}${imageParagraph()}` : '';
+  const extras = rich ? `${tableXml(grid)}${imageParagraph()}` : '';
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="${W}" xmlns:r="${R}" xmlns:wp="${WP}" xmlns:a="${A}" xmlns:pic="${PIC}"><w:body>${p1}${pageBreakParagraph()}${p2}${extras}<w:sectPr><w:headerReference w:type="default" r:id="rId1"/><w:footerReference w:type="default" r:id="rId2"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>`;
 }
 
@@ -200,11 +205,11 @@ function part(name, content) {
   return { name, data: Buffer.isBuffer(content) ? content : Buffer.from(content, 'utf8') };
 }
 
-function makeDocx({ rich }) {
+function makeDocx({ rich, grid = false }) {
   const entries = [
     part('[Content_Types].xml', contentTypesXml({ rich })),
     part('_rels/.rels', rootRelationshipsXml()),
-    part('word/document.xml', documentXml({ rich })),
+    part('word/document.xml', documentXml({ rich, grid })),
     part('word/_rels/document.xml.rels', documentRelationshipsXml({ rich })),
     part('word/header1.xml', headerXml()),
     part('word/footer1.xml', footerXml()),
@@ -241,6 +246,7 @@ function main() {
   const fixtures = [
     ['synthetic-basic.docx', makeDocx({ rich: false })],
     ['synthetic-rich.docx', makeDocx({ rich: true })],
+    ['synthetic-grid.docx', makeDocx({ rich: true, grid: true })],
   ];
 
   if (!check) mkdirSync(outputDir, { recursive: true });
@@ -275,9 +281,10 @@ function main() {
       }
       console.log(`MATCH ${name} sha256=${createHash('sha256').update(actual).digest('hex')}`);
     } else {
+      let disposition = 'WROTE';
       try { writeFileSync(target, expected, { flag: 'wx' }); }
-      catch (error) { if (error.code !== 'EEXIST') throw error; }
-      console.log(`WROTE ${target} sha256=${createHash('sha256').update(expected).digest('hex')}`);
+      catch (error) { if (error.code !== 'EEXIST') throw error; disposition = 'UNCHANGED'; }
+      console.log(`${disposition} ${target} sha256=${createHash('sha256').update(expected).digest('hex')}`);
     }
   }
   if (mismatch) process.exitCode = 1;
