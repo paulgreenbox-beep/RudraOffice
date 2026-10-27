@@ -4,6 +4,56 @@
 
 This is a source baseline, not an accepted executable release. No clean-machine/public-only Windows build was verified during publication. Full app and verification bootstrap has known blockers listed below. Original development files were not changed to create this repository.
 
+## RDO-001 public dependency admission
+
+The source-only bootstrap contract is `verification/public-dependencies.json`.
+Run the read-only preflight before a public Windows build:
+
+```powershell
+node tools/public-dependency-verification.mjs
+node --test tools/public-dependency-verification.test.mjs
+```
+
+A blocked result is exit 2 with concrete issues; it is not a passing build.
+The preflight checks independent Git roots (never an enclosing repository's
+HEAD), reviewed exact revisions, repository origins, clean trees including
+hidden index flags, physical path containment, required files and all seven
+existing Verification Core integrity pins. It neither repairs dependencies nor
+changes the authoritative `verification/toolkit-core.json` binding.
+
+**The contract is currently `pending_owner_review`.** The observed public
+Toolkit main is `5ae780a75060f00e583500490782a6ebec35b595`; it does not contain
+Verification Core. Owner-proposed Toolkit PR #1 provides those exact Core
+modules at `a3452ac231a2b61d532739203fd1d2f2e3de4e8c`. This is a review candidate,
+not an automatically approved or merged Office dependency. The Makepad pin
+below is likewise only a compatibility candidate. Matching package version
+`2.0.0` is not SDK qualification.
+
+Once owner/consumer review records both exact compatible revisions in the
+contract, an explicit initial network bootstrap can be requested:
+
+```powershell
+node tools/public-dependency-verification.mjs --bootstrap
+```
+
+Until then it refuses **before network or filesystem changes**. Afterwards it
+can create only missing dependency checkouts and validates them; an existing
+dirty, mismatched, externally linked or incomplete checkout is rejected and
+left intact. Failed newly created directories are retained for inspection,
+not silently deleted or overwritten. There is no download in a Cargo build
+script and no source from the local development Toolkit is copied by this tool.
+Git operations use command-local `core.longpaths=true` for Windows paths; no
+global Git/OS setting is changed. Prefer a short checkout root such as `C:/Dev`.
+
+The `Public dependency contract tests` Actions workflow runs only these cheap
+Node/source-admission regressions on Windows/Linux. It is deliberately **not**
+the full Windows app/launcher CI or a GUI/release gate. Full `windows-ci.yml`
+remains blocked until actual public SDK/build qualification succeeds.
+The job also checks existing consumer policy tests against the exact public
+Core candidate above. The missing `verification/inputs/RC28-closure.json` is
+restored as first-party planning data: it contains historical PARTIAL hashes
+and relative report paths, not private documents or a new accepted run.
+
 ## Windows requirements
 
 - Windows 10/11, x64, Git and PowerShell.

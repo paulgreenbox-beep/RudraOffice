@@ -1,0 +1,17 @@
+{
+  "milestone_id": "RDO-001-public-bootstrap-02",
+  "kind": "infrastructure",
+  "changed_modules": ["public-source-bootstrap", "verification-infrastructure"],
+  "changed_files": [
+    "tools/public-dependency-verification.mjs",
+    "tools/public-dependency-verification.test.mjs",
+    "verification/public-dependencies.json",
+    "verification/verification-policy.json",
+    "verification/inputs/RC28-closure.json",
+    "docs/BUILDING.md",
+    ".github/workflows/source-bootstrap.yml"
+  ],
+  "feature_tags": ["verification-infrastructure"],
+  "release_candidate": false,
+  "budget_override_reason": "Source-only bootstrap and policy-test completeness; no runtime, SDK/Core bytes, native GUI policy, budgets, risk triggers or acceptance history changed. Adds L0 source-admission tests and the missing public RC28 planning input without changing its assertions or promoting historical RC28. CI runs pure Node tests only against an exact proposed public Toolkit Core revision. SDK/app qualification remains a separate blocked gate."
+}

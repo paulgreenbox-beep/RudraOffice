@@ -1,0 +1,14 @@
+{
+  "milestone_id": "RDO-001-public-bootstrap",
+  "kind": "infrastructure",
+  "changed_modules": ["verification-infrastructure"],
+  "changed_files": [
+    "tools/public-dependency-verification.mjs",
+    "tools/public-dependency-verification.test.mjs",
+    "verification/public-dependencies.json"
+  ],
+  "feature_tags": ["verification-infrastructure"],
+  "release_candidate": false,
+  "source_scope": ["public dependency admission and explicit bootstrap tooling", "docs/BUILDING.md dependency instructions only"],
+  "budget_override_reason": "Source-only infrastructure: read-only exact Git-root/revision/clean-tree and existing Core hash checks, explicit opt-in bootstrap. Does not alter runtime dependency bytes, Core pins, production code, native GUI policy or acceptance counters. Public Makepad/Toolkit compatibility remains blocked until reviewed and independently built. No GUI result is claimed."
+}
