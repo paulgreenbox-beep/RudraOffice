@@ -56,9 +56,10 @@ jobs:
           [pscustomobject]@{available_ram_mib=$available;active_compilers=$compilers;minimum_ram_mib=2048} | ConvertTo-Json
           if ($available -lt 2048 -or $compilers -ne 0) { throw 'Cargo resource admission blocked' }
       - name: Locked dependency graph before compilation
+        id: locked_graph
         working-directory: RudraOffice/workspace
         run: |
-          rustup run 1.97.1 cargo metadata --locked --format-version 1 --no-deps > public-cargo-metadata.json
+          rustup run 1.97.1 cargo metadata --locked --format-version 1 > public-cargo-metadata.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Get-FileHash Cargo.lock -Algorithm SHA256
       - name: Candidate application and launcher build (not GUI/release acceptance)
@@ -68,4 +69,25 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Get-FileHash (Join-Path $env:CARGO_TARGET_DIR 'debug/rudra-office-app.exe') -Algorithm SHA256
           Get-FileHash (Join-Path $env:CARGO_TARGET_DIR 'debug/rudra-office-launcher.exe') -Algorithm SHA256
+      - name: Capture lockfile proposal only after locked graph refusal
+        id: lock_proposal
+        if: failure() && steps.locked_graph.outcome == 'failure'
+        working-directory: RudraOffice/workspace
+        run: |
+          # Diagnostic resolution only: never build unlocked and never push this file.
+          rustup run 1.97.1 cargo metadata --format-version 1 > candidate-metadata.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $proposal = Join-Path $env:GITHUB_WORKSPACE 'lock-proposal'
+          New-Item -ItemType Directory -Path $proposal -Force | Out-Null
+          Copy-Item -LiteralPath Cargo.lock -Destination (Join-Path $proposal 'Cargo.lock')
+          git diff -- Cargo.lock | Out-File -FilePath (Join-Path $proposal 'Cargo.lock.diff') -Encoding utf8
+          [pscustomobject]@{qualified=$false;kind='source-lock-proposal-only';office=(git rev-parse HEAD);toolkit=(git -C ../../Rust_Makepad_Toolkit rev-parse HEAD);makepad=(git -C ../../Rust_Makepad_Toolkit/.deps/makepad rev-parse HEAD);cargo_lock=(Get-FileHash Cargo.lock -Algorithm SHA256).Hash} | ConvertTo-Json | Out-File -FilePath (Join-Path $proposal 'source.json') -Encoding utf8
+      - name: Upload source-only proposal for human/consumer review (no EXE)
+        if: always() && steps.lock_proposal.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: public-lock-proposal-${{ github.run_attempt }}
+          path: lock-proposal/
+          retention-days: 7
+          if-no-files-found: error
       # Deliberately no desktop actions, GUI certification, binary upload or Release.
