@@ -2,7 +2,7 @@
   "milestone_id": "RDO-003-windows-ci",
   "kind": "infrastructure",
   "changed_modules": ["public-windows-ci"],
-  "changed_files": [".github/workflows/windows-ci.yml", "verification/inputs/RDO-002-public-corpus.json", "verification/inputs/RDO-003-windows-ci.json"],
+  "changed_files": [".github/workflows/windows-ci.yml", "docs/BUILDING.md", "verification/inputs/RDO-002-public-corpus.json", "verification/inputs/RDO-003-windows-ci.json"],
   "feature_tags": ["verification-infrastructure", "external-baseline", "win32"],
   "release_candidate": false,
   "budget_override_reason": "Exact public source/build profile only. CI uses each owning Cargo workspace and lockfile, no private corpus or desktop actions. Head-only checks are not merge-base integration/branch protection. Native L3/L4b/L5 and unknown source-impact review remain held; no functional acceptance counter or production release promotion."
