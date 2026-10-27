@@ -36,23 +36,18 @@ hidden index flags, physical path containment, required files and all seven
 existing Verification Core integrity pins. It neither repairs dependencies nor
 changes the authoritative `verification/toolkit-core.json` binding.
 
-**The contract is currently `pending_owner_review`.** The observed public
+**The exact source/build profile is now owner-reviewed.** The observed public
 Toolkit main is `5ae780a75060f00e583500490782a6ebec35b595`; it does not contain
 Verification Core. Owner-proposed Toolkit PR #1 provides those exact Core
-modules at `a3452ac231a2b61d532739203fd1d2f2e3de4e8c`. This is a review candidate,
-not an automatically approved or merged Office dependency. The Makepad pin
-below is likewise only a compatibility candidate. Matching package version
-`2.0.0` is not SDK qualification.
+modules at `a3452ac231a2b61d532739203fd1d2f2e3de4e8c`. Owner approval is restricted to source/bootstrap and the locked Windows build above; both PRs remain unmerged. Matching package version `2.0.0` alone is not SDK qualification. The owner separately reported D3D11 shader failures in other applications using this SDK; no Office runtime result is inferred, and native render/input acceptance remains required.
 
-Once owner/consumer review records both exact compatible revisions in the
-contract, an explicit initial network bootstrap can be requested:
+The reviewed contract permits explicit initial network bootstrap:
 
 ```powershell
 node tools/public-dependency-verification.mjs --bootstrap
 ```
 
-Until then it refuses **before network or filesystem changes**. Afterwards it
-can create only missing dependency checkouts and validates them; an existing
+Unreviewed contracts still refuse **before network or filesystem changes**. A reviewed bootstrap can create only missing dependency checkouts and validates them; an existing
 dirty, mismatched, externally linked or incomplete checkout is rejected and
 left intact. Failed newly created directories are retained for inspection,
 not silently deleted or overwritten. There is no download in a Cargo build
@@ -76,7 +71,7 @@ isolated Rust 1.97.1 on a fresh Windows runner. Identity and resource checks and
 locked metadata precede the locked app/launcher build. A failed run records the
 first unresolved compatibility boundary; it does not qualify the proposed SDK.
 No desktop GUI or EXE upload/release is performed. Reviewed production pins
-remain unset until consumer review and actual qualification establish them.
+are recorded only for the approved source/build scope, not native GUI or release.
 
 ## Windows requirements
 
@@ -102,7 +97,7 @@ C:/Dev/
 ```powershell
 git clone https://github.com/paulgreenbox-beep/RudraOffice.git
 git clone https://github.com/paulgreenbox-beep/rust-makepad-toolkit.git Rust_Makepad_Toolkit
-git -C Rust_Makepad_Toolkit checkout --detach c3b168ba10255ba644bd3a0d91524f3cd23cbf6b
+git -C Rust_Makepad_Toolkit checkout --detach a3452ac231a2b61d532739203fd1d2f2e3de4e8c
 ```
 
 The public Toolkit base contains rudra-runtime, makepad-toolkit-core, makepad-toolkit-widgets and toolkit-windows-automation. The local development copy has unpublished modifications; these are not copied into RudraOffice and the base SHA is not a claim of byte-identical dependencies.
@@ -116,7 +111,7 @@ cd Rust_Makepad_Toolkit
 ./tools/bootstrap-makepad.ps1 -Revision 105158e08c89d47f57af4621420ed68eb3a147ce
 ```
 
-This is the public script's recorded default, not a RudraOffice compatibility qualification. The development junction points to an operator-managed SDK directory with no independent `.git`; an enclosing unrelated repository's HEAD must not be called a Makepad revision. The old unused RudraOffice vendor/makepad commit is not the current application's dependency either. No SDK fork or hidden build-script download is introduced here.
+This exact revision passed the public source/build qualification above, not native GUI acceptance. The development junction points to an operator-managed SDK directory with no independent `.git`; an enclosing unrelated repository's HEAD must not be called a Makepad revision. The old unused RudraOffice vendor/makepad commit is not the current application's dependency either. No SDK fork or hidden build-script download is introduced here.
 
 The operator can use the Toolkit script's `-MakepadPath` option to an existing compatible checkout. Its source identity must be separately verified. Do not overwrite an existing dependency link, change it to another source without review, or assume that any Makepad 2.0 package is compatible.
 
@@ -126,7 +121,7 @@ From an environment with compatible dependencies:
 
 ```powershell
 cd RudraOffice/workspace
-cargo metadata --locked --offline --no-deps --format-version 1
+cargo metadata --locked --offline --format-version 1
 cargo build --locked -j 1 -p rudra-office-app -p rudra-office-launcher
 ```
 
