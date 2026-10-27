@@ -2,7 +2,22 @@
 
 ## Scope and current reproducibility
 
-This is a source baseline, not an accepted executable release. No clean-machine/public-only Windows build was verified during publication. Full app and verification bootstrap has known blockers listed below. Original development files were not changed to create this repository.
+This is a source baseline, not an accepted executable release. The original publication had no clean public Windows build. A subsequent candidate qualification now passes as recorded below; source review, native GUI and release acceptance remain separate. Original development files were not changed to create this repository.
+
+### Qualified public build candidate (2026-10-27)
+
+[Windows run 40567876295](https://github.com/paulgreenbox-beep/RudraOffice/actions/runs/40567876295) passed full locked dependency resolution and `cargo build --locked -j 1 -p rudra-office-app -p rudra-office-launcher` on a fresh Windows runner:
+
+- Office: `a20df27649a8faa770ac47c4dbaf4432c21d221a` (PR #1, not main).
+- Toolkit: `a3452ac231a2b61d532739203fd1d2f2e3de4e8c` (Toolkit PR #1, pending owner review/merge).
+- Official Makepad: `105158e08c89d47f57af4621420ed68eb3a147ce`.
+- Rust/Cargo: `1.97.1`, MSVC x64; Node 22 for source verification.
+- Workspace Cargo.lock SHA-256: `1427F7CC9E1BAF6989A43C3B9D4752D0458C2C539B5E1288BDE441D6D11FDCA0`.
+- Actual compilation time: 9m45s.
+- App EXE SHA-256: `6BD5C4542353393FE284FE94489C9223A12274319B1FEE6D136BD04B0F4CD809`.
+- Launcher EXE SHA-256: `841310E95C389E07611D726D905128F912FE98FFD0B1EEEBE2D87C7F5F9E8266`.
+
+These hashes describe diagnostic runner outputs, not uploaded binaries or a release. That run wrote generated Cargo metadata inside its source tree; a clean artifact source-state label is not asserted. Subsequent qualification writes metadata outside the tree. No GUI operation, app test, strict Clippy or complete corpus test was proved by this build alone. Main/public pins are not automatically advanced by a successful candidate build.
 
 ## RDO-001 public dependency admission
 
@@ -47,8 +62,8 @@ global Git/OS setting is changed. Prefer a short checkout root such as `C:/Dev`.
 
 The `Public dependency contract tests` Actions workflow runs only these cheap
 Node/source-admission regressions on Windows/Linux. It is deliberately **not**
-the full Windows app/launcher CI or a GUI/release gate. Full `windows-ci.yml`
-remains blocked until actual public SDK/build qualification succeeds.
+the full Windows app/launcher CI or a GUI/release gate. A full `windows-ci.yml`
+also needs compilable public test fixtures and owning-component qualification.
 The job also checks existing consumer policy tests against the exact public
 Core candidate above. The missing `verification/inputs/RC28-closure.json` is
 restored as first-party planning data: it contains historical PARTIAL hashes

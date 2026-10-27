@@ -59,7 +59,7 @@ jobs:
         id: locked_graph
         working-directory: RudraOffice/workspace
         run: |
-          rustup run 1.97.1 cargo metadata --locked --format-version 1 > public-cargo-metadata.json
+          rustup run 1.97.1 cargo metadata --locked --format-version 1 > (Join-Path $env:RUNNER_TEMP 'public-cargo-metadata.json')
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Get-FileHash Cargo.lock -Algorithm SHA256
       - name: Candidate application and launcher build (not GUI/release acceptance)
@@ -75,7 +75,7 @@ jobs:
         working-directory: RudraOffice/workspace
         run: |
           # Diagnostic resolution only: never build unlocked and never push this file.
-          rustup run 1.97.1 cargo metadata --format-version 1 > candidate-metadata.json
+          rustup run 1.97.1 cargo metadata --format-version 1 > (Join-Path $env:RUNNER_TEMP 'candidate-metadata.json')
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $proposal = Join-Path $env:GITHUB_WORKSPACE 'lock-proposal'
           New-Item -ItemType Directory -Path $proposal -Force | Out-Null

@@ -24,8 +24,8 @@
   },
   "blockers": [
     "Public Toolkit main lacks the pinned verification-economy Core modules.",
-    "Existing public Windows UIA API source compatibility is reviewed; native SDK/app compilation is still unqualified.",
-    "Development Makepad is an operator-managed vendor junction without an independent Git root; the official bootstrap candidate is not qualified as equivalent."
+    "Candidate app and launcher build passed on a clean public Windows runner (40567876295); owner/consumer review and public main adoption remain separate.",
+    "Development Makepad remains an operator-managed junction without an independent Git root; the qualified public candidate is not asserted byte-identical to that local SDK or native-GUI accepted."
   ],
-  "acceptance": "Source identity preflight only. No clean Windows build, GUI, CI or production acceptance is implied."
+  "acceptance": "Source preflight only; separate candidate build receipt is documented in BUILDING.md. Reviewed source pins remain pending. No GUI or production acceptance is implied."
 }
