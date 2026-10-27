@@ -87,13 +87,41 @@ jobs:
           Get-FileHash Cargo.lock -Algorithm SHA256
       - name: Owning component public tests (no private-fixtures feature)
         working-directory: RudraOffice/workspace
-        run: rustup run 1.97.1 cargo test --locked -j 1 -p writer-api -p writer-docx -p pdf-oxide-adapter -p slides-pptx-adapter -p slides-ui -p sheets-api -p sheets-xlsx
+        run: |
+          $groups = @(
+            @{manifest='../writer/Cargo.toml';packages=@('writer-api','writer-docx')},
+            @{manifest='../pdf/crates/pdf-oxide-adapter/Cargo.toml';packages=@('pdf-oxide-adapter')},
+            @{manifest='../slides/Cargo.toml';packages=@('slides-pptx-adapter','slides-ui')},
+            @{manifest='../sheets/Cargo.toml';packages=@('sheets-api','sheets-xlsx','sheets-ironcalc-adapter')}
+          )
+          foreach ($group in $groups) {
+            $argsList = @('test','--manifest-path',$group.manifest,'--locked','-j','1')
+            foreach ($package in $group.packages) { $argsList += @('-p',$package) }
+            rustup run 1.97.1 cargo @argsList
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
       - name: Application and launcher integration tests (not desktop GUI)
         working-directory: RudraOffice/workspace
         run: rustup run 1.97.1 cargo test --locked -j 1 -p rudra-office-app -p rudra-office-launcher -p office-ui-runtime
       - name: Strict first-party Clippy (default features, no private corpus)
         working-directory: RudraOffice/workspace
-        run: rustup run 1.97.1 cargo clippy --locked -j 1 -p rudra-office-app -p rudra-office-launcher -p office-ui-runtime -p writer-api -p writer-docx -p pdf-oxide-adapter -p slides-pptx-adapter -p slides-ui -p sheets-api -p sheets-xlsx --all-targets -- -D warnings
+        run: |
+          $groups = @(
+            @{manifest='Cargo.toml';packages=@('rudra-office-app','rudra-office-launcher','office-ui-runtime')},
+            @{manifest='../writer/Cargo.toml';packages=@('writer-api','writer-docx')},
+            @{manifest='../pdf/crates/pdf-oxide-adapter/Cargo.toml';packages=@('pdf-oxide-adapter')},
+            @{manifest='../slides/Cargo.toml';packages=@('slides-pptx-adapter','slides-ui')},
+            @{manifest='../sheets/Cargo.toml';packages=@('sheets-api','sheets-xlsx','sheets-ironcalc-adapter')}
+          )
+          foreach ($group in $groups) {
+            $argsList = @('clippy','--manifest-path',$group.manifest,'--locked','-j','1')
+            foreach ($package in $group.packages) { $argsList += @('-p',$package) }
+            $argsList += @('--all-targets','--no-deps','--','-D','warnings')
+            rustup run 1.97.1 cargo @argsList
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+      # This profile qualifies exact PR head bytes, not the synthetic merge commit.
+      # Base compatibility / merge acceptance and branch protection remain separate.
       - name: Locked diagnostic application and launcher build
         working-directory: RudraOffice/workspace
         run: |

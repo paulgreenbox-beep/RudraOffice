@@ -1,0 +1,9 @@
+{
+  "milestone_id": "RDO-002-public-corpus",
+  "kind": "infrastructure",
+  "changed_modules": ["public-regression-corpus", "writer-parser", "pdf-parser", "slides-parser"],
+  "changed_files": [".gitignore", "docs/PRIVATE_FIXTURES.md", "fixtures/public/README.md", "fixtures/public/manifest.json", "fixtures/public/writer/synthetic-basic.docx", "fixtures/public/writer/synthetic-rich.docx", "fixtures/public/pdf/cid-unicode-space-control.pdf", "fixtures/public/pdf/cid-unicode-space-tw.pdf", "fixtures/public/pdf/cid-cyrillic.pdf", "fixtures/public/slides/controlled-projection.pptx", "fixtures/public/slides/supported-roundtrip.pptx", "tools/generate-public-writer-fixtures.mjs", "tools/generate-public-pdf-fixtures.mjs", "tools/generate-public-slides-fixtures.mjs", "tools/public-fixtures.test.mjs", "writer/crates/writer-api/Cargo.toml", "writer/crates/writer-api/src/lib.rs", "writer/crates/writer-docx/Cargo.toml", "writer/crates/writer-docx/src/lib.rs", "pdf/crates/pdf-oxide-adapter/tests/adapter_public.rs", "slides/crates/slides-pptx-adapter/src/office_oxide_codec.rs", "slides/crates/slides-pptx-adapter/tests/adapter_contract.rs", "slides/crates/slides-ui/src/lib.rs", "workspace/crates/rudra-office-app/Cargo.toml", "workspace/crates/rudra-office-app/src/app_tests.rs"],
+  "feature_tags": ["verification-infrastructure", "writer-parser", "pdf-parser", "slides-parser", "external-baseline"],
+  "release_candidate": false,
+  "budget_override_reason": "Test/provenance-only public corpus migration. Preserve original private-mode assertions; report explicit opt-in skips, never accepted user-file coverage. New source mappings may require impact review: do not waive unknown paths or parser/L4b requirements. CI runs are lower-level diagnostics until complete policy/GUI proof. No source runtime algorithms, production SDK, budgets, Core validator/pins or acceptance history changed."
+}
