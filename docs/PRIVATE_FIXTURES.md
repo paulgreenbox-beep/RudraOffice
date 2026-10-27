@@ -17,6 +17,14 @@ by a synthetic shape/table/unsupported-graphic package without dropping its
 existing structural assertions. Additional import/export and selection tests
 use a second synthetic PPTX.
 
+
+App integration uses the public rich Writer document by default. Its explicit
+`private-fixtures` feature selects the original layout document and retains the
+original geometry/text/table/header/footer expectations. The real-DOCX and JPEG
+environment-selected app tests are explicitly ignored until requested with
+`--ignored`; an absent environment variable then fails rather than silently
+returning PASS. This is a visible skip, not accepted real-document coverage.
+
 These changes make fixture ownership explicit; they do not establish successful
 Cargo, renderer, GUI or full round-trip acceptance. In particular, imported
 Writer header/footer metadata is tested, but its export fidelity remains a
