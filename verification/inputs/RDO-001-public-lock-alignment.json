@@ -1,0 +1,10 @@
+{
+  "milestone_id": "RDO-001-public-lock-alignment",
+  "kind": "infrastructure",
+  "changed_modules": ["app-native-dependencies"],
+  "changed_files": ["workspace/Cargo.lock"],
+  "feature_tags": ["win32", "external-baseline", "toolkit-shared"],
+  "release_candidate": false,
+  "source_scope": "Remove exactly three surplus dependency edges absent from independently fetched public Toolkit/SDK manifests; no package version or registry checksum changes.",
+  "budget_override_reason": "Local public graph and independent Windows runner produced identical candidate lockfile SHA256 1427F7CC9E1BAF6989A43C3B9D4752D0458C2C539B5E1288BDE441D6D11FDCA0. Only candidate locked build qualification is attempted here. Native actions, App/clipboard functional acceptance and both risk-triggered expanded compositions remain NOT_RUN/withheld until supported owner input and the complete source baseline are qualified. No cadence/history update or production dependency switch."
+}
