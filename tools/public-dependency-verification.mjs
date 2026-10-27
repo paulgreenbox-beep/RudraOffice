@@ -13,6 +13,14 @@ const modules = ['package.json', 'core/global-policy.json', 'core/global-policy.
 const sha = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex').toUpperCase();
 const read = file => JSON.parse(fs.readFileSync(file, 'utf8'));
 const real = file => fs.realpathSync(file);
+function samePhysicalDirectory(first, second) {
+  const a = fs.statSync(first, {bigint: true}), b = fs.statSync(second, {bigint: true});
+  if (!a.isDirectory() || !b.isDirectory()) return false;
+  // Windows Git/Node may spell drive letters and temp directories differently.
+  // Compare actual directory identity, not path casing or a basename heuristic.
+  if (a.ino !== 0n && b.ino !== 0n) return a.dev === b.dev && a.ino === b.ino;
+  return real(first) === real(second); // Unknown file identity stays fail-closed.
+}
 const revision = value => typeof value === 'string' && /^[a-f0-9]{40}$/i.test(value);
 function physicalProjection(file) {
   let cursor = path.resolve(file);
@@ -57,7 +65,7 @@ export function inspectRepository(root, expected, run = gitRead) {
   const issues = [];
   if (!fs.existsSync(root)) return {exists: false, issues: ['MISSING_CHECKOUT']};
   const top = run(root, ['rev-parse', '--show-toplevel']);
-  if (!top.ok || !fs.existsSync(top.text) || real(top.text) !== real(root)) {
+  if (!top.ok || !fs.existsSync(top.text) || !samePhysicalDirectory(top.text, root)) {
     return {exists: true, independent_git_root: false, issues: ['NOT_INDEPENDENT_GIT_ROOT']};
   }
   const head = run(root, ['rev-parse', 'HEAD']);

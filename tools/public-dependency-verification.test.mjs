@@ -132,7 +132,7 @@ test('assume-unchanged cannot hide a modified tracked dependency file',t=>{
   git('update-index','--assume-unchanged','Cargo.toml');write(path.join(repo,'Cargo.toml'),'after\n');
   assert.equal(git('status','--porcelain=v1'),'','establish the actual status blind spot');
   const r=inspectRepository(repo,{repository:f.config.makepad.repository,reviewed_revision:head});
-  assert.ok(r.issues.includes('FORBIDDEN_OR_UNREADABLE_INDEX_FLAGS'));assert.equal(r.clean,false);
+  assert.ok(r.issues.includes('FORBIDDEN_OR_UNREADABLE_INDEX_FLAGS'),JSON.stringify(r));assert.equal(r.clean,false);
 });
 test('skip-worktree flags also fail admission',t=>{
   const f=fixture(t),run=(cwd,args)=>args[0]==='ls-files'?{ok:true,text:'S Cargo.toml\0'}:f.run(cwd,args);
@@ -162,4 +162,15 @@ test('pinned Core bytes in an external junction are not Toolkit-owned source',t=
   assert.ok(core.startsWith(f.base+path.sep)&&external.startsWith(f.base+path.sep));fs.renameSync(core,external);
   fs.symlinkSync(external,core,process.platform==='win32'?'junction':'dir');
   assert.throws(()=>verifyPublicDependencies(f.root,{run:f.run}),/PHYSICAL_PATH_ESCAPES_ROOT/);
+});
+test('physical Git root survives Windows casing and directory aliases',t=>{
+  const f=fixture(t);let alias;
+  if(process.platform==='win32')alias=f.toolkit.toLowerCase();
+  else{alias=path.join(f.base,'same-root-alias');fs.symlinkSync(f.toolkit,alias,'dir');}
+  const run=(cwd,args)=>cwd===f.toolkit&&args[1]==='--show-toplevel'?{ok:true,text:alias}:f.run(cwd,args);
+  assert.deepEqual(verifyPublicDependencies(f.root,{run}).issues,[]);
+});
+test('different physical directories cannot impersonate the same Git root basename',t=>{
+  const f=fixture(t),other=fixture(t),run=(cwd,args)=>cwd===f.toolkit&&args[1]==='--show-toplevel'?{ok:true,text:other.toolkit}:f.run(cwd,args);
+  assert.ok(codes(verifyPublicDependencies(f.root,{run})).includes('NOT_INDEPENDENT_GIT_ROOT'));
 });
