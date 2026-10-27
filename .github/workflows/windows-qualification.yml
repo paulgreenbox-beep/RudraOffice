@@ -12,7 +12,7 @@ jobs:
     env:
       CARGO_BUILD_JOBS: '1'
       CARGO_INCREMENTAL: '0'
-      CARGO_TARGET_DIR: ${{ runner.temp }}/rudra-public-target
+      CARGO_TARGET_DIR: ${{ github.workspace }}/rudra-public-target
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
