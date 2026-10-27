@@ -207,7 +207,7 @@ fn two_byte_cid_unicode_spaces_do_not_receive_word_spacing() {
 #[test]
 fn public_synthetic_cid_preserves_non_ascii_unicode() {
     let bytes = include_bytes!("../../../../fixtures/public/pdf/cid-cyrillic.pdf");
-    let mut backend = pdf_oxide::PdfDocument::from_bytes(bytes.to_vec()).unwrap();
+    let backend = pdf_oxide::PdfDocument::from_bytes(bytes.to_vec()).unwrap();
     let text = backend.extract_text(0).unwrap();
     assert_eq!(text.split_whitespace().collect::<Vec<_>>().join(" "), "А Б");
     let mut adapter = PdfOxideAdapter::default();

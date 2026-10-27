@@ -195,7 +195,7 @@ fn public_synthetic_fixture_round_trips_supported_text_and_png() {
             _ => None,
         })
         .expect("second slide synthetic PNG");
-    assert_eq!(image.format, slides_api::SlideImageFormat::Png);
+    assert_eq!(image.format, slides_api::ImageFormat::Png);
     assert!(image.bytes.starts_with(b"\x89PNG\r\n\x1a\n"));
 
     let encoded = PresentationEngine::save(engine, &decoded).unwrap();
