@@ -1737,9 +1737,8 @@ mod tests {
 
     #[test]
     fn controlled_pptx_projects_shapes_tables_and_unknown_graphics() {
-        const CONTROLLED: &[u8] = include_bytes!(
-            "../../../../fixtures/release-acceptance/pptx/controlled-acceptance.pptx"
-        );
+        const CONTROLLED: &[u8] =
+            include_bytes!("../../../../fixtures/public/slides/controlled-projection.pptx");
 
         let loaded = OfficeOxideCodec
             .decode(CONTROLLED, &Limits::default())

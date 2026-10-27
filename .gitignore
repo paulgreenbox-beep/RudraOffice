@@ -32,6 +32,14 @@
 *.zip
 *.7z
 fixtures/private/
+# Exact, independently generated public regression corpus (see provenance).
+!fixtures/public/writer/synthetic-basic.docx
+!fixtures/public/writer/synthetic-rich.docx
+!fixtures/public/pdf/cid-unicode-space-control.pdf
+!fixtures/public/pdf/cid-unicode-space-tw.pdf
+!fixtures/public/pdf/cid-cyrillic.pdf
+!fixtures/public/slides/controlled-projection.pptx
+!fixtures/public/slides/supported-roundtrip.pptx
 # Generated verification/evidence, never acceptance-by-source-control.
 reports/evidence/
 reports/script/

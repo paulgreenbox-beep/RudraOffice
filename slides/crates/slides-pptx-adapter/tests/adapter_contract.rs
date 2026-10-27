@@ -169,6 +169,53 @@ fn office_oxide_engine_works_behind_trait_object() {
 }
 
 #[test]
+fn public_synthetic_fixture_round_trips_supported_text_and_png() {
+    const SUPPORTED: &[u8] =
+        include_bytes!("../../../../fixtures/public/slides/supported-roundtrip.pptx");
+
+    let engine: &dyn PresentationEngine = &office_oxide_adapter();
+    let decoded = PresentationEngine::load(engine, SUPPORTED).unwrap();
+    assert_eq!(decoded.slides.len(), 2);
+    assert!(flattened_text(&decoded).contains("PUBLIC-SYNTHETIC-01"));
+    assert!(flattened_text(&decoded).contains("PUBLIC-SYNTHETIC-02"));
+
+    let first_text = decoded.slides[0]
+        .objects
+        .iter()
+        .find(|object| matches!(&object.kind, ObjectKind::Text(_)))
+        .expect("first slide text object");
+    assert!(first_text.bounds.width > 0.0);
+    assert!(first_text.bounds.height > 0.0);
+
+    let image = decoded.slides[1]
+        .objects
+        .iter()
+        .find_map(|object| match &object.kind {
+            ObjectKind::Image(image) => Some(image),
+            _ => None,
+        })
+        .expect("second slide synthetic PNG");
+    assert_eq!(image.format, slides_api::SlideImageFormat::Png);
+    assert!(image.bytes.starts_with(b"\x89PNG\r\n\x1a\n"));
+
+    let encoded = PresentationEngine::save(engine, &decoded).unwrap();
+    assert!(encoded.starts_with(b"PK\x03\x04"));
+    let round_tripped = PresentationEngine::load(engine, &encoded).unwrap();
+    assert_eq!(round_tripped.slides.len(), 2);
+    assert!(flattened_text(&round_tripped).contains("PUBLIC-SYNTHETIC-01"));
+    assert!(flattened_text(&round_tripped).contains("PUBLIC-SYNTHETIC-02"));
+    let round_tripped_image = round_tripped.slides[1]
+        .objects
+        .iter()
+        .find_map(|object| match &object.kind {
+            ObjectKind::Image(image) => Some(image),
+            _ => None,
+        })
+        .expect("round-tripped synthetic PNG");
+    assert_eq!(round_tripped_image.bytes, image.bytes);
+}
+
+#[test]
 fn office_oxide_with_limits_is_public_and_delegates_defaults() {
     let explicit = office_oxide_adapter_with_limits(Limits::default());
     let implicit = office_oxide_adapter();

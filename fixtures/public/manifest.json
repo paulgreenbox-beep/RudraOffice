@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "origin": "wholly synthetic first-party generator source; no user-derived bytes",
+  "license": "MIT",
+  "fixtures": [
+    {"path":"writer/synthetic-basic.docx","generator":"tools/generate-public-writer-fixtures.mjs","bytes":3768,"sha256":"455564747738C27E283E838851E9CA3A408140E85B44754E611AB8B4C0CA5A6D"},
+    {"path":"writer/synthetic-rich.docx","generator":"tools/generate-public-writer-fixtures.mjs","bytes":5372,"sha256":"ED629529B218B08CB8A22815A37861585CEEE8532701AFA6D35BEC1C556D0733"},
+    {"path":"pdf/cid-unicode-space-control.pdf","generator":"tools/generate-public-pdf-fixtures.mjs","bytes":2672,"sha256":"369ADBFA5FF98F3A8B2DCDDD49195E5D81492C5A0B4768C52B09C0FFCB541D11"},
+    {"path":"pdf/cid-unicode-space-tw.pdf","generator":"tools/generate-public-pdf-fixtures.mjs","bytes":2672,"sha256":"67B97A0F629E89BCF6B27E483BA55441F2D7F0C8AA69C48BD611B2642CE5DEE8"},
+    {"path":"pdf/cid-cyrillic.pdf","generator":"tools/generate-public-pdf-fixtures.mjs","bytes":2672,"sha256":"96189B320CE97A708DA7DF03163892FCD5976604AA3FB6CE0CDCE8D95A3D9566"},
+    {"path":"slides/controlled-projection.pptx","generator":"tools/generate-public-slides-fixtures.mjs","bytes":11663,"sha256":"AAC622A1C0567C465E5CB7BAE8B6621E1C2B39C3D22D62E72396445A9D3EC0CE"},
+    {"path":"slides/supported-roundtrip.pptx","generator":"tools/generate-public-slides-fixtures.mjs","bytes":9314,"sha256":"A69EBFB23102C375B073C3C6F09067EF8F06AA9187B07B8A1D6E20B3AE82DC25"}
+  ],
+  "acceptance": "provenance/byte identity only; Cargo/render/GUI outcomes require separate actual receipts"
+}

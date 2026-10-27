@@ -4,6 +4,9 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[features]
+private-fixtures = []
+
 [dependencies]
 writer-core = { path = "../writer-core" }
 office_oxide = { path = "../../../vendor/office-oxide" }

@@ -4947,12 +4947,21 @@ mod tests {
         assert_eq!(table.rows[1].cells[2].text, "D");
     }
 
+    #[cfg(feature = "private-fixtures")]
+    fn private_docx_fixture(name: &str) -> Vec<u8> {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../fixtures/release-acceptance/docx")
+            .join(name);
+        std::fs::read(&path)
+            .unwrap_or_else(|error| panic!("private DOCX fixture {}: {error}", path.display()))
+    }
+
+    #[cfg(feature = "private-fixtures")]
     #[test]
     fn projection_diagnostics_report_supported_fixture_content() {
+        let bytes = private_docx_fixture("writer-layout-a4-multipage.docx");
         let imported = DocxImporter
-            .import_with_layout(include_bytes!(
-                "../../../../fixtures/release-acceptance/docx/writer-layout-a4-multipage.docx"
-            ))
+            .import_with_layout(&bytes)
             .expect("import controlled DOCX fixture");
 
         assert_eq!(imported.projection.source.tables, 1);
@@ -4965,11 +4974,28 @@ mod tests {
     }
 
     #[test]
-    fn standard_drawingml_image_uses_display_geometry() {
+    fn public_docx_projection_reports_table_image_and_page_break() {
         let imported = DocxImporter
             .import_with_layout(include_bytes!(
-                "../../../../fixtures/release-acceptance/docx/writer-visual-fidelity-fixture.docx"
+                "../../../../fixtures/public/writer/synthetic-rich.docx"
             ))
+            .expect("import synthetic DOCX with table, drawing, and page break");
+
+        assert_eq!(imported.projection.source.tables, 1);
+        assert_eq!(imported.projection.source.images, 1);
+        assert_eq!(imported.projection.source.page_breaks, 1);
+        assert_eq!(imported.projection.projected.table_blocks, 1);
+        assert_eq!(imported.projection.projected.image_blocks, 1);
+        assert_eq!(imported.projection.projected.page_break_blocks, 1);
+        assert_eq!(imported.projection.fallback.total(), 0);
+    }
+
+    #[cfg(feature = "private-fixtures")]
+    #[test]
+    fn standard_drawingml_image_uses_display_geometry() {
+        let bytes = private_docx_fixture("writer-visual-fidelity-fixture.docx");
+        let imported = DocxImporter
+            .import_with_layout(&bytes)
             .expect("import standard DrawingML image fixture");
 
         assert_eq!(imported.projection.source.images, 1);
@@ -4984,11 +5010,30 @@ mod tests {
     }
 
     #[test]
-    fn standard_docx_fixture_preserves_cyrillic_text_through_projection() {
+    fn public_drawingml_image_uses_display_geometry() {
         let imported = DocxImporter
             .import_with_layout(include_bytes!(
-                "../../../../fixtures/release-acceptance/docx/writer-visual-fidelity-fixture.docx"
+                "../../../../fixtures/public/writer/synthetic-rich.docx"
             ))
+            .expect("import synthetic DrawingML image fixture");
+
+        assert_eq!(imported.projection.source.images, 1);
+        assert_eq!(imported.projection.projected.image_blocks, 1);
+        let image = imported
+            .snapshot
+            .blocks
+            .iter()
+            .find_map(BlockSnapshot::image)
+            .expect("projected image block");
+        assert_eq!(image.layout.size, PixelSize::new(240, 140).unwrap());
+    }
+
+    #[cfg(feature = "private-fixtures")]
+    #[test]
+    fn standard_docx_fixture_preserves_cyrillic_text_through_projection() {
+        let bytes = private_docx_fixture("writer-visual-fidelity-fixture.docx");
+        let imported = DocxImporter
+            .import_with_layout(&bytes)
             .expect("import standard Unicode DOCX fixture");
 
         let projected_text = imported
@@ -5003,6 +5048,53 @@ mod tests {
             projected_text.contains("Жёлтый текст"),
             "the standard DOCX reader and projection must preserve UTF-8 Cyrillic text"
         );
+    }
+
+    #[test]
+    fn public_docx_preserves_styled_unicode_paragraphs_and_page_metadata() {
+        let imported = DocxImporter
+            .import_with_layout(include_bytes!(
+                "../../../../fixtures/public/writer/synthetic-basic.docx"
+            ))
+            .expect("import independently generated public DOCX");
+        let text_blocks = imported
+            .snapshot
+            .blocks
+            .iter()
+            .filter_map(BlockSnapshot::text_block)
+            .collect::<Vec<_>>();
+        let first = text_blocks
+            .iter()
+            .find(|block| block.text == "Рассвет 🙂на орбите")
+            .expect("first public paragraph must retain Cyrillic and emoji");
+        assert!(
+            first
+                .runs
+                .iter()
+                .any(|run| run.text == "Рассвет " && run.style.bold())
+        );
+        assert!(
+            first
+                .runs
+                .iter()
+                .any(|run| run.text == "🙂на орбите" && run.style.italic())
+        );
+        assert!(
+            text_blocks
+                .iter()
+                .any(|block| block.text == "Учебная страница 😀")
+        );
+        assert_eq!(imported.projection.source.page_breaks, 1);
+        assert_eq!(imported.projection.projected.page_break_blocks, 1);
+        let section = imported
+            .layout
+            .sections
+            .first()
+            .expect("public section metadata");
+        assert_eq!(section.width_twips, 11_906);
+        assert_eq!(section.height_twips, 16_838);
+        assert_eq!(section.header_text, "Синтетический верх");
+        assert_eq!(section.footer_text, "Синтетический низ");
     }
 
     #[test]
