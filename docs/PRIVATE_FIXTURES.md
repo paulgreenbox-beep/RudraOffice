@@ -5,7 +5,7 @@ No user DOCX/XLSX/PDF/PPTX or reduced user-derived document is part of the publi
 RDO-002 adds an independently generated, narrowly allowlisted corpus under
 `fixtures/public/`. See its `README.md` and `manifest.json` for exact provenance,
 generator commands and SHA-256 values. No operator document, external embedded
-font or third-party image was used to create these seven files.
+font or third-party image was used to create these eight files.
 
 Default Writer tests use synthetic documents. Original private-layout/fidelity
 tests require the explicit `private-fixtures` feature in `writer-api` or
@@ -18,7 +18,7 @@ existing structural assertions. Additional import/export and selection tests
 use a second synthetic PPTX.
 
 
-App integration uses the public rich Writer document by default. Its explicit
+App integration uses the public multi-page 4-row/3-column grid document by default. Its explicit
 `private-fixtures` feature selects the original layout document and retains the
 original geometry/text/table/header/footer expectations. The real-DOCX and JPEG
 environment-selected app tests are explicitly ignored until requested with
@@ -38,6 +38,6 @@ The following historical private inputs remain opt-in and must not be mistaken f
 
 Default targets no longer deliberately include these absent private bytes at compile time. Explicit private-fixture runs still require their original files at runtime. Actual compilation, rendering and test results remain separate gates; retaining source assertions does not establish a PASS.
 
-Future corpus additions must be generated independently with reviewed image/font provenance and preserve actual regression triggers/assertions. Do not upload the operator's real corpus or embedded proprietary fonts. Keep operator-provided inputs outside version control; .gitignore rejects document formats except the seven exact reviewed synthetic paths.
+Future corpus additions must be generated independently with reviewed image/font provenance and preserve actual regression triggers/assertions. Do not upload the operator's real corpus or embedded proprietary fonts. Keep operator-provided inputs outside version control; .gitignore rejects document formats except the eight exact reviewed synthetic paths.
 
 Historical GUI recipes use sanitized template paths and retained diagnostic RC identities. They are examples until bound to fresh operator-owned fixtures and a qualified executable. Recipe validation is not execution or acceptance.

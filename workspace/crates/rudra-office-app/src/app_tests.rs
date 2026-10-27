@@ -7,7 +7,7 @@ fn controlled_writer_fixture_path() -> PathBuf {
     let relative = if cfg!(feature = "private-fixtures") {
         "../../../fixtures/release-acceptance/docx/writer-layout-a4-multipage.docx"
     } else {
-        "../../../fixtures/public/writer/synthetic-rich.docx"
+        "../../../fixtures/public/writer/synthetic-grid.docx"
     };
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(relative)
 }
@@ -3124,9 +3124,9 @@ fn writer_controlled_fixture_preserves_visible_content_classes() {
                 144,
                 ["Рассвет", "🙂на орбите", "Учебная"],
                 "Рассвет",
-                2,
-                1,
-                vec!["Тестовая ячейка", "42"],
+                3,
+                4,
+                vec!["Ячейка 1.1", "Ячейка 3.2", "Ячейка 4.3"],
                 "Синтетический верх",
                 "Синтетический низ",
             )
