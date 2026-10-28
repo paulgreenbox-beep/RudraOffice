@@ -47,7 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.sha }}
           path: RudraOffice
           persist-credentials: false
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -146,8 +146,8 @@ jobs:
             rustup run 1.97.1 cargo @argsList
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
-      # This profile qualifies exact PR head bytes, not the synthetic merge commit.
-      # Base compatibility / merge acceptance and branch protection remain separate.
+      # PR events execute the actual GitHub merge ref; main events execute main.
+      # Record git HEAD and rerun final main after ordinary approved merges.
       - name: Locked diagnostic application and launcher build
         working-directory: RudraOffice/workspace
         run: |

@@ -5,7 +5,7 @@
   "audited_office_revision": "3cd18c4645e7bddd729644cb01f573d0dc597289",
   "toolkit": {
     "repository": "https://github.com/paulgreenbox-beep/rust-makepad-toolkit.git",
-    "public_main_observed": "5ae780a75060f00e583500490782a6ebec35b595",
+    "public_main_observed": "0b01942f1a7d1c276f130c9db03146cb96c1718a",
     "proposed_revision": "a3452ac231a2b61d532739203fd1d2f2e3de4e8c",
     "reviewed_revision": "a3452ac231a2b61d532739203fd1d2f2e3de4e8c",
     "required_files": [
@@ -24,8 +24,8 @@
     "required_files": ["widgets/Cargo.toml", "platform/Cargo.toml", "draw/Cargo.toml"]
   },
   "blockers": [
-    "Public Toolkit main lacks the pinned verification-economy Core modules.",
-    "Candidate app and launcher build passed on a clean public Windows runner (40567876295) and owner approved this source/build profile only; public main adoption remains separate.",
+    "Toolkit PR #1 is merged at 0b01942f1a7d1c276f130c9db03146cb96c1718a. Its tree equals reviewed a3452ac231a2b61d532739203fd1d2f2e3de4e8c; exact reviewed dependency pins are intentionally unchanged.",
+    "Public source/build qualification is separate from native runtime and production release acceptance. See BUILDING.md for historical candidate runs and current merge qualification scope.",
     "Development Makepad remains an operator-managed junction without an independent Git root; the qualified public candidate is not asserted byte-identical to that local SDK or native-GUI accepted."
   ],
   "acceptance": "Reviewed source/bootstrap profile only; separate candidate build receipt is documented in BUILDING.md. No GUI or production acceptance is implied."
