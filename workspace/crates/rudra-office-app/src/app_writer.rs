@@ -622,6 +622,9 @@ impl AppState {
         marker_id: &str,
         logical_position: f64,
     ) -> Result<(), String> {
+        if self.writer_inline_draft_is_active() {
+            return Err("Сначала примените или отмените открытый черновик Writer.".to_owned());
+        }
         if !logical_position.is_finite() {
             return Err("Линейка передала некорректную координату.".to_owned());
         }

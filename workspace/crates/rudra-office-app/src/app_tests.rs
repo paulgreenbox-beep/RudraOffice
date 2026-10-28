@@ -1567,6 +1567,113 @@ fn writer_ruler_left_indent_updates_selected_block_and_undoes() {
 }
 
 #[test]
+fn writer_ruler_change_preserves_an_active_inline_draft_until_cancel() {
+    let (mut state, document_id, block_id) = writer_inline_fixture("Исходный абзац");
+    let marker_id = format!("{WRITER_PARAGRAPH_LEFT_MARKER_PREFIX}{block_id}");
+    let left_margin = match state.document().expect("writer document") {
+        OpenDocument::Writer(writer) => writer.api().layout_settings().margins.left_half_points,
+        _ => panic!("writer backend expected"),
+    };
+    let target_absolute = left_margin + 120;
+    let logical_position = f64::from(target_absolute) * PIXELS_PER_HALF_POINT_AT_100;
+
+    state
+        .apply_writer_ruler_change(&marker_id, logical_position)
+        .expect("ruler edit must create a redoable history entry");
+    state
+        .apply_writer_home_command(WriterHomeCommand::Undo)
+        .expect("ruler edit must undo before opening the inline editor");
+    assert_eq!(
+        writer_history_for_document(&state, document_id),
+        (true, true),
+        "fixture must have both undo and redo history before the blocked edit"
+    );
+
+    let token = state
+        .begin_writer_inline_session(document_id, block_id)
+        .expect("inline session must begin");
+    state
+        .update_writer_inline_draft(&token, "Несохранённый текст".to_owned())
+        .expect("inline draft must update");
+
+    let document_before = match state.document().expect("writer document") {
+        OpenDocument::Writer(writer) => writer.snapshot(),
+        _ => panic!("writer backend expected"),
+    };
+    let selection_before = match state.document().expect("writer document") {
+        OpenDocument::Writer(writer) => writer.api().selection(),
+        _ => panic!("writer backend expected"),
+    };
+    let revision_before = writer_revision_for_document(&state, document_id);
+    let history_before = writer_history_for_document(&state, document_id);
+    let draft_before = writer_inline_draft_for_document(&state, document_id).map(str::to_owned);
+    let inline_session_before = state.writer_inline_session.clone();
+    let active_document_before = state.active_document_id();
+    let status_before = state.status.clone();
+    let detail_before = state.detail.clone();
+
+    assert!(
+        state
+            .apply_writer_ruler_change(&marker_id, logical_position)
+            .is_err(),
+        "ruler changes must be rejected while an inline draft is unresolved"
+    );
+    let document_after = match state.document().expect("writer document") {
+        OpenDocument::Writer(writer) => writer.snapshot(),
+        _ => panic!("writer backend expected"),
+    };
+    let selection_after = match state.document().expect("writer document") {
+        OpenDocument::Writer(writer) => writer.api().selection(),
+        _ => panic!("writer backend expected"),
+    };
+    assert_eq!(document_after, document_before);
+    assert_eq!(
+        writer_revision_for_document(&state, document_id),
+        revision_before
+    );
+    assert_eq!(
+        writer_history_for_document(&state, document_id),
+        history_before
+    );
+    assert_eq!(selection_after, selection_before);
+    assert_eq!(
+        writer_inline_draft_for_document(&state, document_id).map(str::to_owned),
+        draft_before
+    );
+    assert_eq!(state.writer_inline_session, inline_session_before);
+    assert_eq!(state.active_document_id(), active_document_before);
+    assert_eq!(state.status, status_before);
+    assert_eq!(state.detail, detail_before);
+
+    state
+        .cancel_writer_inline_session(&token)
+        .expect("cancel must release the inline editor");
+    assert!(state.writer_inline_session.is_none());
+    assert_eq!(writer_inline_draft_for_document(&state, document_id), None);
+
+    state
+        .apply_writer_ruler_change(&marker_id, logical_position)
+        .expect("ruler edit must work after cancelling the inline draft");
+    let left_indent = match state.document().expect("writer document") {
+        OpenDocument::Writer(writer) => writer.snapshot().blocks[0]
+            .text_block()
+            .expect("text block")
+            .paragraph_style
+            .indent_left_half_points(),
+        _ => panic!("writer backend expected"),
+    };
+    assert_eq!(left_indent, 120);
+    assert_eq!(
+        writer_revision_for_document(&state, document_id),
+        revision_before + 1
+    );
+    assert_eq!(
+        writer_history_for_document(&state, document_id),
+        (true, false)
+    );
+}
+
+#[test]
 fn writer_ruler_maps_left_right_and_first_line_markers() {
     let margins = writer_api::layout::PageMargins {
         top_half_points: 100,
