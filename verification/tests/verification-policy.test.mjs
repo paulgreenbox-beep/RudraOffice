@@ -50,6 +50,19 @@ test('public Windows CI mapping preserves source units and native risk compositi
   assert.equal(plan.execution.updates_acceptance, false);
 });
 
+test('isolated Writer API production source triggers history/session risks without caller tags', () => {
+  const policy = known(0);
+  const before = JSON.stringify(policy);
+  const plan = planVerification(policy, {milestone_id: 'SYNTHETIC-WRITER-API', changed_files: ['writer/crates/writer-api/src/lib.rs']});
+  assert.deepEqual(plan.unmapped_changes, {files: [], modules: []});
+  assert.equal(plan.l4b_required, true);
+  for (const id of ['global-undo-redo', 'tabs-session-activation']) assert.ok(plan.risk_triggers.includes(id), id);
+  for (const id of ['expanded-office-sessions', 'expanded-sheets-composition']) assert.ok(plan.selected_scenario_ids.includes(id), id);
+  for (const id of ['writer-core-crate', 'writer-api-crate', 'app-state']) assert.ok([...plan.required.L0, ...plan.required.L1, ...plan.required.L2].some(t => t.id === id), id);
+  assert.equal(plan.execution.updates_acceptance, false);
+  assert.equal(JSON.stringify(policy), before);
+});
+
 test('A pure formula helper: L0/L1, zero routine GUI below cadence', () => {
   const p = pure(known());
   assert.equal(p.status, 'PLANNED');
