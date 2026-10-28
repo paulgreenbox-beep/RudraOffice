@@ -17,6 +17,19 @@ by a synthetic shape/table/unsupported-graphic package without dropping its
 existing structural assertions. Additional import/export and selection tests
 use a second synthetic PPTX.
 
+The original controlled Slides input remains a separate ignored runtime test,
+sharing exactly the same projection assertions as the public synthetic input:
+
+```powershell
+$env:RUDRA_SLIDES_CONTROLLED_PPTX = 'C:/operator-fixtures/controlled-acceptance.pptx'
+cargo test --manifest-path slides/Cargo.toml --locked -j 1 -p slides-pptx-adapter private_controlled_pptx_projection -- --ignored
+```
+
+This must be explicitly requested. A missing variable or unreadable private
+file fails; it never silently returns PASS. No private file is distributed.
+The added ignored test increases the default combined baseline from four to
+five explicit ignored cases; it does not reduce the 812 passing Rust tests.
+
 
 App integration uses the public multi-page 4-row/3-column grid document by default. Its explicit
 `private-fixtures` feature selects the original layout document and retains the
