@@ -19,6 +19,12 @@ This is a source baseline, not an accepted executable release. The original publ
 
 These hashes describe diagnostic runner outputs, not uploaded binaries or a release. That run wrote generated Cargo metadata inside its source tree; a clean artifact source-state label is not asserted. Subsequent qualification writes metadata outside the tree. No GUI operation, app test, strict Clippy or complete corpus test was proved by this build alone. Main/public pins are not automatically advanced by a successful candidate build.
 
+### Foundation merge qualification (2026-10-28)
+
+Toolkit PR #1 was merged at `0b01942f1a7d1c276f130c9db03146cb96c1718a`, Office PR #1 at `42de15966bbee1eb93b6faf6598b00a79f45e7ef`, and Office PR #2 at `91c8ace8b91bea1c8b7ebd99d3238e4201c73015`. The Toolkit merge tree equals the reviewed `a3452ac231a2b61d532739203fd1d2f2e3de4e8c` tree. The exact reviewed Toolkit/Makepad pins are retained; a merge commit is not an automatic dependency upgrade. These merges do not retroactively qualify their main artifacts using historical PR-head runs.
+
+PR #3 now checks out `${{ github.sha }}`: the actual GitHub synthetic merge ref for pull requests, and the actual main commit for pushes. Both the reviewed merge-compatible run and a separate fresh final-main run are required before claiming the integrated source/build baseline. This document does not predeclare either run successful. Expected source checks are now 86 (three additive impact-policy regressions, including isolated Writer API source at a known baseline without caller tags); the 812 Rust passes are preserved, with five explicit private-fixture ignores, including the restored private PPTX opt-in. Native input/rendering, expanded L4b compositions and release gates remain separate.
+
 ## RDO-001 public dependency admission
 
 The source-only bootstrap contract is `verification/public-dependencies.json`.
@@ -37,9 +43,9 @@ existing Verification Core integrity pins. It neither repairs dependencies nor
 changes the authoritative `verification/toolkit-core.json` binding.
 
 **The exact source/build profile is now owner-reviewed.** The observed public
-Toolkit main is `5ae780a75060f00e583500490782a6ebec35b595`; it does not contain
-Verification Core. Owner-proposed Toolkit PR #1 provides those exact Core
-modules at `a3452ac231a2b61d532739203fd1d2f2e3de4e8c`. Owner approval is restricted to source/bootstrap and the locked Windows build above; both PRs remain unmerged. Matching package version `2.0.0` alone is not SDK qualification. The owner separately reported D3D11 shader failures in other applications using this SDK; no Office runtime result is inferred, and native render/input acceptance remains required.
+Toolkit main is now `0b01942f1a7d1c276f130c9db03146cb96c1718a`; it contains
+the exact Core modules reviewed at `a3452ac231a2b61d532739203fd1d2f2e3de4e8c`.
+The historical candidate description above remains a record of that earlier run, not the present PR state. Owner approval remains restricted to source/bootstrap and Windows build. Matching package version `2.0.0` alone is not SDK qualification. The owner separately reported D3D11 shader failures in other applications using this SDK; no Office runtime result is inferred, and native render/input acceptance remains required.
 
 The reviewed contract permits explicit initial network bootstrap:
 
@@ -148,8 +154,10 @@ All original first-party Cargo.lock files are retained. This publication does no
 
 ## Verification and fixture limitations
 
-Start with a small pure package rather than a full app rebuild. The README shows the available focused commands. Full Writer DOCX, PDF adapter and Slides adapter tests reference private or missing binary fixtures; these are not included for privacy/provenance reasons. This is a documented test-compilation limitation, not passing/skipped GUI proof. Assertions are unchanged.
+Start with a small pure package rather than a full app rebuild. PR #2 provides eight deterministic public fixtures and preserves private fidelity assertions under explicit opt-in modes; see [PRIVATE_FIXTURES.md](PRIVATE_FIXTURES.md) and [fixture provenance](../fixtures/public/README.md). Default Writer/DOCX, PDF and Slides test targets no longer include missing private document bytes. App layout/font/header tests use the synthetic 4-row/3-column Writer document; operator DOCX/JPEG acceptance is explicitly ignored, not silently passed. Cargo and rendering results still require actual run receipts.
 
-The pinned public Toolkit tree does not contain the development `verification-economy/` core expected by tools/toolkit-verification-core.mjs. The retained exact version/module hashes fail closed if missing or mismatched. An explicitly published compatible Toolkit/core revision is needed before these wrappers can work from public dependencies. Do not remove the validator, weaken hashes or forge receipts.
+The reviewed Toolkit PR revision contains all seven exact Core modules expected by `tools/toolkit-verification-core.mjs`; Toolkit main did not contain them at the audited baseline. Version/module hashes remain unchanged and fail closed. This is an explicit public dependency selection, not permission to use arbitrary dirty Toolkit source, weaken the validator or forge receipts.
 
-GUI recipes have sanitized sample installation paths and omitted real-user corpus. They need explicit operator binding and fresh source/artifact/runtime proof before execution. Neither old RC hashes nor source publication establishes GUI acceptance. No full Windows CI workflow is added until this bootstrap is reproducible.
+`Windows public candidate CI` (PR #3) checks the exact GitHub merge-ref bytes for pull requests and main bytes for pushes: source/Core/provenance tests, first-party formatting, owning-workspace locked tests, app/launcher integration, strict Clippy and locked diagnostic build. Historical head-only runs are not reused as current merge/main execution. No desktop GUI or release qualification is implied. CI failures remain real failures; branch protection is withheld until a stable green baseline and merge checks are reviewed.
+
+GUI recipes have sanitized sample installation paths and omitted real-user corpus. They need explicit operator binding and fresh source/artifact/runtime proof before execution. Neither old RC hashes nor source publication establishes GUI acceptance. Native input remains blocked by the read-only canary. Both expanded L4b compositions and frozen-artifact L5 remain unaccepted.

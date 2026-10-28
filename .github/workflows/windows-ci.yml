@@ -1,0 +1,159 @@
+name: Windows public candidate CI
+on:
+  pull_request:
+    branches: [main, 'codex/rdo-*']
+    paths:
+      - 'workspace/**'
+      - 'writer/**'
+      - 'sheets/**'
+      - 'slides/**'
+      - 'pdf/**'
+      - 'vendor/**'
+      - 'verification/**'
+      - 'fixtures/public/**'
+      - 'tools/**'
+      - '.github/workflows/windows-ci.yml'
+      - '.cargo/**'
+      - '.gitignore'
+  push:
+    branches: [main]
+    paths:
+      - 'workspace/**'
+      - 'writer/**'
+      - 'sheets/**'
+      - 'slides/**'
+      - 'pdf/**'
+      - 'vendor/**'
+      - 'verification/**'
+      - 'fixtures/public/**'
+      - 'tools/**'
+      - '.github/workflows/windows-ci.yml'
+      - '.cargo/**'
+      - '.gitignore'
+permissions:
+  contents: read
+concurrency:
+  group: windows-public-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  public-windows:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      CARGO_BUILD_JOBS: '1'
+      CARGO_INCREMENTAL: '0'
+      CARGO_TARGET_DIR: ${{ github.workspace }}/rudra-public-target
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          path: RudraOffice
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: paulgreenbox-beep/rust-makepad-toolkit
+          ref: a3452ac231a2b61d532739203fd1d2f2e3de4e8c
+          path: Rust_Makepad_Toolkit
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: makepad/makepad
+          ref: 105158e08c89d47f57af4621420ed68eb3a147ce
+          path: Rust_Makepad_Toolkit/.deps/makepad
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Exact source identities and unchanged Core pins
+        working-directory: RudraOffice
+        run: |
+          node tools/public-dependency-verification.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node tools/verification-policy.mjs validate --root .
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git rev-parse HEAD
+      - name: Pure source, policy and synthetic corpus tests
+        working-directory: RudraOffice
+        run: node --test tools/public-dependency-verification.test.mjs verification/tests/verification-policy.test.mjs tools/public-fixtures.test.mjs
+      - name: Isolated compiler, rustfmt and Clippy
+        run: |
+          rustup toolchain install 1.97.1 --profile minimal --component rustfmt --component clippy
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          rustup run 1.97.1 rustc -Vv
+          rustup run 1.97.1 cargo -V
+      - name: First-party Rust formatting (no vendor formatting)
+        working-directory: RudraOffice
+        run: |
+          $groups = @(
+            @{manifest='workspace/Cargo.toml';packages=@('rudra-office-app','rudra-office-launcher','office-ui-runtime')},
+            @{manifest='writer/Cargo.toml';packages=@('writer-api','writer-docx','writer-core','writer-ui','writer-rudra-adapter')},
+            @{manifest='sheets/Cargo.toml';packages=@('sheets-api','sheets-xlsx','sheets-core','sheets-grid','sheets-ui','sheets-ironcalc-adapter')},
+            @{manifest='slides/Cargo.toml';packages=@('slides-api','slides-core','slides-canvas','slides-ui','slides-pptx-adapter')},
+            @{manifest='pdf/crates/pdf-oxide-adapter/Cargo.toml';packages=@('pdf-oxide-adapter')},
+            @{manifest='pdf/crates/pdf-core/Cargo.toml';packages=@('pdf-core')}
+          )
+          foreach ($group in $groups) {
+            $argsList = @('fmt','--manifest-path',$group.manifest)
+            foreach ($package in $group.packages) { $argsList += @('-p',$package) }
+            $argsList += @('--check')
+            rustup run 1.97.1 cargo @argsList
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+      - name: Resource admission and locked graph
+        working-directory: RudraOffice/workspace
+        run: |
+          $os = Get-CimInstance Win32_OperatingSystem
+          $available = [math]::Floor($os.FreePhysicalMemory / 1024)
+          $compilers = @(Get-Process cargo,rustc,link -ErrorAction SilentlyContinue).Count
+          [pscustomobject]@{available_ram_mib=$available;active_compilers=$compilers;minimum_ram_mib=2048} | ConvertTo-Json
+          if ($available -lt 2048 -or $compilers -ne 0) { throw 'Cargo resource admission blocked' }
+          rustup run 1.97.1 cargo metadata --locked --format-version 1 > (Join-Path $env:RUNNER_TEMP 'public-cargo-metadata.json')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-FileHash Cargo.lock -Algorithm SHA256
+      - name: Owning component public tests (no private-fixtures feature)
+        working-directory: RudraOffice/workspace
+        run: |
+          $groups = @(
+            @{manifest='../writer/Cargo.toml';packages=@('writer-api','writer-docx')},
+            @{manifest='../pdf/crates/pdf-oxide-adapter/Cargo.toml';packages=@('pdf-oxide-adapter')},
+            @{manifest='../slides/Cargo.toml';packages=@('slides-pptx-adapter','slides-ui')},
+            @{manifest='../sheets/Cargo.toml';packages=@('sheets-api','sheets-xlsx','sheets-ironcalc-adapter')}
+          )
+          foreach ($group in $groups) {
+            $argsList = @('test','--manifest-path',$group.manifest,'--locked','-j','1')
+            foreach ($package in $group.packages) { $argsList += @('-p',$package) }
+            rustup run 1.97.1 cargo @argsList
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+      - name: Application and launcher integration tests (not desktop GUI)
+        working-directory: RudraOffice/workspace
+        run: rustup run 1.97.1 cargo test --locked -j 1 -p rudra-office-app -p rudra-office-launcher -p office-ui-runtime
+      - name: Strict first-party Clippy (default features, no private corpus)
+        working-directory: RudraOffice/workspace
+        run: |
+          $groups = @(
+            @{manifest='Cargo.toml';packages=@('rudra-office-app','rudra-office-launcher','office-ui-runtime')},
+            @{manifest='../writer/Cargo.toml';packages=@('writer-api','writer-docx')},
+            @{manifest='../pdf/crates/pdf-oxide-adapter/Cargo.toml';packages=@('pdf-oxide-adapter')},
+            @{manifest='../slides/Cargo.toml';packages=@('slides-pptx-adapter','slides-ui')},
+            @{manifest='../sheets/Cargo.toml';packages=@('sheets-api','sheets-xlsx','sheets-ironcalc-adapter')}
+          )
+          foreach ($group in $groups) {
+            $argsList = @('clippy','--manifest-path',$group.manifest,'--locked','-j','1')
+            foreach ($package in $group.packages) { $argsList += @('-p',$package) }
+            $argsList += @('--all-targets','--no-deps','--','-D','warnings')
+            rustup run 1.97.1 cargo @argsList
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+      # PR events execute the actual GitHub merge ref; main events execute main.
+      # Record git HEAD and rerun final main after ordinary approved merges.
+      - name: Locked diagnostic application and launcher build
+        working-directory: RudraOffice/workspace
+        run: |
+          if (git status --porcelain --untracked-files=all) { throw 'Source changed during verification' }
+          rustup run 1.97.1 cargo build --locked -j 1 -p rudra-office-app -p rudra-office-launcher
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-FileHash (Join-Path $env:CARGO_TARGET_DIR 'debug/rudra-office-app.exe') -Algorithm SHA256 | Format-List
+          Get-FileHash (Join-Path $env:CARGO_TARGET_DIR 'debug/rudra-office-launcher.exe') -Algorithm SHA256 | Format-List
+      # No desktop input, expected-to-actual copying, binary upload, release or GUI PASS.
