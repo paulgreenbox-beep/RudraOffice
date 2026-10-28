@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "status": "reviewed",
+  "review_scope": "APPROVED_SOURCE_BUILD_PROFILE_ONLY; explicit Toolkit owner review 2026-10-27, receipt SHA256 8B1DC6FCC71743776249B8E8BC0CFE60E6664370DD206359F24B9C4F0512A49F; no native GUI, checked actions, release or equivalence with dirty local SDK approval",
+  "audited_office_revision": "3cd18c4645e7bddd729644cb01f573d0dc597289",
+  "toolkit": {
+    "repository": "https://github.com/paulgreenbox-beep/rust-makepad-toolkit.git",
+    "public_main_observed": "5ae780a75060f00e583500490782a6ebec35b595",
+    "proposed_revision": "a3452ac231a2b61d532739203fd1d2f2e3de4e8c",
+    "reviewed_revision": "a3452ac231a2b61d532739203fd1d2f2e3de4e8c",
+    "required_files": [
+      "crates/rudra-runtime/Cargo.toml",
+      "crates/makepad-toolkit-core/Cargo.toml",
+      "crates/makepad-toolkit-widgets/Cargo.toml",
+      "crates/toolkit-windows-automation/Cargo.toml",
+      "verification-economy/package.json"
+    ]
+  },
+  "makepad": {
+    "repository": "https://github.com/makepad/makepad.git",
+    "bootstrap_candidate_revision": "105158e08c89d47f57af4621420ed68eb3a147ce",
+    "reviewed_revision": "105158e08c89d47f57af4621420ed68eb3a147ce",
+    "relative_root": ".deps/makepad",
+    "required_files": ["widgets/Cargo.toml", "platform/Cargo.toml", "draw/Cargo.toml"]
+  },
+  "blockers": [
+    "Public Toolkit main lacks the pinned verification-economy Core modules.",
+    "Candidate app and launcher build passed on a clean public Windows runner (40567876295) and owner approved this source/build profile only; public main adoption remains separate.",
+    "Development Makepad remains an operator-managed junction without an independent Git root; the qualified public candidate is not asserted byte-identical to that local SDK or native-GUI accepted."
+  ],
+  "acceptance": "Reviewed source/bootstrap profile only; separate candidate build receipt is documented in BUILDING.md. No GUI or production acceptance is implied."
+}

@@ -1,0 +1,36 @@
+{
+  "milestone_id": "RC28",
+  "kind": "functional",
+  "candidate_status": "PARTIAL",
+  "release_candidate": true,
+  "changed_files": [
+    "workspace/crates/rudra-office-app/src/main.rs",
+    "workspace/crates/rudra-office-app/src/sheets_grid_widget.rs",
+    "workspace/crates/rudra-office-app/Cargo.toml",
+    "workspace/Cargo.lock",
+    "workspace/crates/rudra-office-app/src/windows_clipboard.rs",
+    "workspace/crates/rudra-office-app/src/windows_grid_paste_hook.rs",
+    "workspace/crates/rudra-office-app/src/sheets_clipboard_state.rs",
+    "workspace/crates/rudra-office-app/src/sheets_clipboard_tests.rs",
+    "sheets/crates/sheets-api/src/clipboard.rs",
+    "sheets/crates/sheets-api/src/clipboard_tsv.rs",
+    "sheets/crates/sheets-api/src/clipboard_tests.rs",
+    "sheets/crates/sheets-api/src/history.rs",
+    "sheets/crates/sheets-api/src/lib.rs",
+    "sheets/crates/sheets-ironcalc-adapter/src/lib.rs",
+    "sheets/crates/sheets-core/src/lib.rs",
+    "sheets/crates/sheets-ironcalc-adapter/src/clipboard_formulas.rs"
+  ],
+  "changed_modules": ["sheets-native-clipboard", "sheets-clipboard-dispatcher"],
+  "feature_tags": ["clipboard", "rich-clipboard", "external-tsv", "cross-book", "cut"],
+  "budget_override_reason": "RC28 changed native input and grid drawing: retain one focused grid run beyond four clipboard runs; compact L4b compositions replace the 13 historical launches without dropping boundaries.",
+  "artifact": {
+    "path": "releases/rc28/rudra-office-app.exe",
+    "sha256": "8965CD87E2C0269AD7489F81C5ADF512E5E67CC110989E3872B95BE309721E4F",
+    "status": "PARTIAL",
+    "old_gui_runs_before_smoke": 24,
+    "old_frozen_smoke_runs": 1,
+    "quality_evidence": "reports/evidence/sheets-clipboard-editing-20261007/quality-gates.json",
+    "source_freeze": "reports/evidence/sheets-clipboard-editing-20261007/quality-attempt-03/source-sha256.json"
+  }
+}

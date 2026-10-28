@@ -1,0 +1,55 @@
+name: Public dependency contract tests
+on:
+  pull_request:
+    paths:
+      - 'tools/public-dependency-verification*'
+      - 'verification/public-dependencies.json'
+      - 'verification/verification-policy.json'
+      - 'verification/inputs/**'
+      - 'verification/tests/**'
+      - '.github/workflows/source-bootstrap.yml'
+  push:
+    branches: [main, 'codex/rdo-*']
+    paths:
+      - 'tools/public-dependency-verification*'
+      - 'verification/public-dependencies.json'
+      - 'verification/verification-policy.json'
+      - 'verification/inputs/**'
+      - 'verification/tests/**'
+      - '.github/workflows/source-bootstrap.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-contract:
+    name: Source admission only (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: RudraOffice
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          path: RudraOffice
+          persist-credentials: false
+      - name: Exact public Core review candidate (not native SDK qualification)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: paulgreenbox-beep/rust-makepad-toolkit
+          ref: a3452ac231a2b61d532739203fd1d2f2e3de4e8c
+          path: Rust_Makepad_Toolkit
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Pure dependency contract regressions (not an Office build)
+        run: node --test tools/public-dependency-verification.test.mjs
+      - name: Exact Core pins and consumer policy
+        run: node tools/verification-policy.mjs validate --root .
+      - name: Existing policy regressions (including RC28 plan input)
+        run: node --test verification/tests/verification-policy.test.mjs
