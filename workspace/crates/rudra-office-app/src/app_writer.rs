@@ -2,6 +2,153 @@
 use super::*;
 
 impl AppState {
+    pub(crate) fn writer_inline_draft_is_active(&self) -> bool {
+        self.writer_inline_session
+            .as_ref()
+            .is_some_and(|session| self.active_document_id() == Some(session.document_id))
+    }
+
+    pub(crate) fn begin_writer_inline_session(
+        &mut self,
+        document_id: RuntimeDocumentId,
+        block_id: u64,
+    ) -> Result<WriterInlineEditorSession, String> {
+        if self.writer_inline_session.is_some() {
+            return Err("Сначала примените или отмените открытый черновик Writer.".to_owned());
+        }
+        if self.active_document_id() != Some(document_id) {
+            return Err("Документ Writer больше не активен.".to_owned());
+        }
+        let Some(OpenDocument::Writer(writer)) = self.document() else {
+            return Err("Активный документ Writer не найден.".to_owned());
+        };
+        let snapshot = writer.snapshot();
+        let block = snapshot
+            .blocks
+            .iter()
+            .find_map(|block| match block {
+                BlockSnapshot::Text(value) if value.id.get() == block_id => Some(value),
+                _ => None,
+            })
+            .ok_or_else(|| "Редактируемый абзац Writer больше не существует.".to_owned())?;
+        let text = block.text.clone();
+        let epoch = self
+            .writer_inline_epoch
+            .checked_add(1)
+            .ok_or_else(|| "Исчерпан счётчик сессий редактирования Writer.".to_owned())?;
+        let session = WriterInlineEditorSession {
+            document_id,
+            block_id,
+            revision: snapshot.revision,
+            epoch,
+        };
+        self.writer_inline_epoch = epoch;
+        self.writer_inline_session = Some(session.clone());
+        self.writer_text_drafts.insert(
+            document_id,
+            WriterTextEditorDraft {
+                selected_block_id: Some(block_id),
+                text,
+            },
+        );
+        Ok(session)
+    }
+
+    pub(crate) fn update_writer_inline_draft(
+        &mut self,
+        session: &WriterInlineEditorSession,
+        text: String,
+    ) -> Result<(), String> {
+        if self.writer_inline_session.as_ref() != Some(session)
+            || self.documents.get(session.document_id).is_none()
+        {
+            return Err("Сессия редактирования Writer устарела.".to_owned());
+        }
+        self.writer_text_drafts.insert(
+            session.document_id,
+            WriterTextEditorDraft {
+                selected_block_id: Some(session.block_id),
+                text,
+            },
+        );
+        Ok(())
+    }
+
+    pub(crate) fn commit_writer_inline_draft(
+        &mut self,
+        session: &WriterInlineEditorSession,
+        text: String,
+    ) -> Result<(), String> {
+        if self.writer_inline_session.as_ref() != Some(session)
+            || self.documents.get(session.document_id).is_none()
+        {
+            return Err("Сессия редактирования Writer устарела.".to_owned());
+        }
+        if self.active_document_id() != Some(session.document_id) {
+            return Err("Вернитесь к документу с черновиком Writer.".to_owned());
+        }
+        let Some(OpenDocument::Writer(writer)) = self.document_mut() else {
+            return Err("Активный документ Writer не найден.".to_owned());
+        };
+        let snapshot = writer.snapshot();
+        let block = snapshot
+            .blocks
+            .iter()
+            .find_map(|block| match block {
+                BlockSnapshot::Text(value) if value.id.get() == session.block_id => Some(value),
+                _ => None,
+            })
+            .ok_or_else(|| "Редактируемый абзац Writer больше не существует.".to_owned())?;
+        if snapshot.revision != session.revision {
+            return Err(
+                "Документ Writer изменился; черновик сохранён для разрешения конфликта.".to_owned(),
+            );
+        }
+        if text != block.text {
+            let (start, end, replacement) = writer_minimal_text_change(&block.text, &text);
+            let container = TextContainerId::Block(BlockId::new(session.block_id));
+            let selection = Selection::new(
+                Cursor::new(container, TextOffset::new(start)),
+                Cursor::new(container, TextOffset::new(end)),
+            );
+            writer
+                .replace_range_atomically(
+                    selection,
+                    TextRange::new(TextOffset::new(start), TextOffset::new(end)),
+                    replacement,
+                )
+                .map_err(|error| error.to_string())?;
+        }
+        self.writer_text_drafts.insert(
+            session.document_id,
+            WriterTextEditorDraft {
+                selected_block_id: Some(session.block_id),
+                text,
+            },
+        );
+        self.writer_inline_session = None;
+        self.status = "Writer: текст абзаца обновлён.".to_owned();
+        self.detail = "Изменение применено к сессии Writer; Ctrl+Z отменяет его.".to_owned();
+        self.sync_active_session_view();
+        Ok(())
+    }
+
+    pub(crate) fn cancel_writer_inline_session(
+        &mut self,
+        session: &WriterInlineEditorSession,
+    ) -> Result<(), String> {
+        if self.writer_inline_session.as_ref() != Some(session)
+            || self.active_document_id() != Some(session.document_id)
+        {
+            return Err(
+                "Сессия редактирования Writer устарела или документ не активен.".to_owned(),
+            );
+        }
+        self.writer_text_drafts.remove(&session.document_id);
+        self.writer_inline_session = None;
+        Ok(())
+    }
+
     pub(crate) fn set_writer_viewport(
         &mut self,
         id: RuntimeDocumentId,
@@ -212,6 +359,9 @@ impl AppState {
         &mut self,
         dropdown_index: usize,
     ) -> Result<(), String> {
+        if self.writer_inline_draft_is_active() {
+            return Err("Сначала примените или отмените открытый черновик Writer.".to_owned());
+        }
         if dropdown_index == WRITER_TEXT_EDITOR_PROMPT_INDEX {
             return Ok(());
         }
@@ -246,6 +396,9 @@ impl AppState {
     }
 
     pub(crate) fn update_writer_text_editor_draft(&mut self, text: String) {
+        if self.writer_inline_draft_is_active() {
+            return;
+        }
         let Ok((document_id, block)) = self.writer_text_editor_selected_block() else {
             return;
         };
@@ -259,6 +412,9 @@ impl AppState {
     }
 
     pub(crate) fn apply_writer_text_editor(&mut self, text: String) -> Result<(), String> {
+        if self.writer_inline_draft_is_active() {
+            return Err("Сначала примените или отмените открытый черновик Writer.".to_owned());
+        }
         let (document_id, block) = self.writer_text_editor_selected_block()?;
         if text == block.text {
             self.writer_text_drafts.insert(
@@ -306,6 +462,9 @@ impl AppState {
     }
 
     pub(crate) fn reset_writer_text_editor_draft(&mut self) -> Result<String, String> {
+        if self.writer_inline_draft_is_active() {
+            return Err("Сначала примените или отмените открытый черновик Writer.".to_owned());
+        }
         let (document_id, block) = self.writer_text_editor_selected_block()?;
         let text = block.text.clone();
         self.writer_text_drafts.insert(
@@ -324,6 +483,9 @@ impl AppState {
         &mut self,
         command: WriterHomeCommand,
     ) -> Result<(), String> {
+        if self.writer_inline_draft_is_active() {
+            return Err("Сначала примените или отмените открытый черновик Writer.".to_owned());
+        }
         let clears_text_draft =
             matches!(&command, WriterHomeCommand::Undo | WriterHomeCommand::Redo);
         let color_value = writer_color_accessibility_value(&command);
@@ -548,9 +710,10 @@ impl AppState {
 
 impl App {
     pub(crate) fn writer_inline_editor_matches_active_document(&self) -> bool {
-        self.writer_inline_editor
-            .as_ref()
-            .is_some_and(|session| self.state.active_document_id() == Some(session.document_id))
+        self.writer_inline_editor.as_ref().is_some_and(|session| {
+            self.state.active_document_id() == Some(session.document_id)
+                && self.state.writer_inline_session.as_ref() == Some(session)
+        })
     }
 
     pub(crate) fn position_writer_inline_editor(&mut self, cx: &mut Cx, bounds: ScreenRect) {
@@ -632,6 +795,9 @@ impl App {
             .writer_text_editor_model()
             .map(|model| model.text)
             .ok_or_else(|| "Текст выбранного абзаца Writer недоступен.".to_owned())?;
+        let session = self
+            .state
+            .begin_writer_inline_session(document_id, block_id)?;
 
         self.position_writer_inline_editor(cx, bounds);
         self.ui
@@ -652,10 +818,7 @@ impl App {
                 false,
             );
         }
-        self.writer_inline_editor = Some(WriterInlineEditorSession {
-            document_id,
-            block_id,
-        });
+        self.writer_inline_editor = Some(session);
         self.writer_inline_editor_pending_focus = true;
         self.state.status = "Writer: включено редактирование текста на странице.".to_owned();
         self.state.detail =
@@ -666,45 +829,56 @@ impl App {
     }
 
     pub(crate) fn commit_writer_inline_editor(&mut self, cx: &mut Cx) -> Result<(), String> {
-        let Some(session) = self.writer_inline_editor.take() else {
+        let Some(session) = self.writer_inline_editor.clone() else {
             return Ok(());
         };
-        self.writer_inline_editor_pending_focus = false;
-        self.ui
-            .view(cx, ids!(writer_inline_editor_host))
-            .set_visible(cx, false);
         if self.state.active_document_id() != Some(session.document_id) {
-            return Ok(());
+            return Err("Вернитесь к документу с черновиком Writer.".to_owned());
         }
         let text = self
             .ui
             .text_input(cx, ids!(writer_inline_text_input))
             .text();
-        let dropdown_index = self
-            .state
-            .writer_text_editor_blocks()
-            .iter()
-            .position(|block| block.block_id == session.block_id)
-            .map(|index| index + 1)
-            .ok_or_else(|| "Редактируемый абзац Writer больше не существует.".to_owned())?;
-        self.state.select_writer_text_editor_block(dropdown_index)?;
-        self.state.apply_writer_text_editor(text)
+        self.commit_writer_inline_editor_with_text(cx, &session, text)
     }
 
-    pub(crate) fn cancel_writer_inline_editor(&mut self, cx: &mut Cx) {
-        let session = self.writer_inline_editor.take();
-        if session
-            .as_ref()
-            .is_some_and(|session| self.state.active_document_id() == Some(session.document_id))
-        {
-            let _ = self.state.reset_writer_text_editor_draft();
+    pub(crate) fn commit_writer_inline_editor_with_text(
+        &mut self,
+        cx: &mut Cx,
+        session: &WriterInlineEditorSession,
+        text: String,
+    ) -> Result<(), String> {
+        if self.writer_inline_editor.as_ref() != Some(session) {
+            return Err("Сессия редактирования Writer устарела.".to_owned());
         }
+        self.state
+            .update_writer_inline_draft(session, text.clone())?;
+        self.state.commit_writer_inline_draft(session, text)?;
+        self.writer_inline_editor = None;
+        self.writer_inline_editor_pending_focus = false;
+        self.ui
+            .view(cx, ids!(writer_inline_editor_host))
+            .set_visible(cx, false);
+        Ok(())
+    }
+
+    pub(crate) fn cancel_writer_inline_editor_for_token(
+        &mut self,
+        cx: &mut Cx,
+        session: &WriterInlineEditorSession,
+    ) -> Result<(), String> {
+        if self.writer_inline_editor.as_ref() != Some(session) {
+            return Err("Сессия редактирования Writer устарела.".to_owned());
+        }
+        self.state.cancel_writer_inline_session(session)?;
+        self.writer_inline_editor = None;
         self.writer_inline_editor_pending_focus = false;
         self.ui
             .view(cx, ids!(writer_inline_editor_host))
             .set_visible(cx, false);
         self.state.status = "Черновик редактирования на странице отменён.".to_owned();
         self.state.detail = "Текст документа не изменён.".to_owned();
+        Ok(())
     }
 
     pub(crate) fn apply_writer_command_from_ui(

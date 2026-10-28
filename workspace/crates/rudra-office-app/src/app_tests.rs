@@ -123,6 +123,83 @@ fn state_with_test_document(path: &str, document: OpenDocument) -> AppState {
     state
 }
 
+fn writer_inline_fixture(text: &str) -> (AppState, RuntimeDocumentId, u64) {
+    let mut writer = WriterViewModel::new();
+    writer.insert_text(text).expect("fixture text must insert");
+    let block_id = writer.snapshot().blocks[0]
+        .text_block()
+        .expect("fixture paragraph")
+        .id
+        .get();
+    let state =
+        state_with_test_document("inline-editor.docx", OpenDocument::Writer(Box::new(writer)));
+    let document_id = state.active_document_id().expect("active Writer document");
+    (state, document_id, block_id)
+}
+
+fn attach_inactive_test_document(
+    state: &mut AppState,
+    path: &str,
+    document: OpenDocument,
+) -> RuntimeDocumentId {
+    let session = DocumentSession::new(DocumentSource::from_path(PathBuf::from(path)), document)
+        .expect("test document must form a valid session");
+    state
+        .documents
+        .insert(session)
+        .expect("test document ID must allocate")
+}
+
+fn writer_text_for_document(state: &AppState, document_id: RuntimeDocumentId) -> String {
+    let session = state
+        .documents
+        .get(document_id)
+        .expect("Writer document must remain registered");
+    let OpenDocument::Writer(writer) = session.backend() else {
+        panic!("Writer backend expected")
+    };
+    writer
+        .snapshot()
+        .blocks
+        .iter()
+        .filter_map(BlockSnapshot::text_block)
+        .map(|block| block.text.as_str())
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn writer_revision_for_document(state: &AppState, document_id: RuntimeDocumentId) -> u64 {
+    let session = state
+        .documents
+        .get(document_id)
+        .expect("Writer document must remain registered");
+    let OpenDocument::Writer(writer) = session.backend() else {
+        panic!("Writer backend expected")
+    };
+    writer.api().editor().revision().get()
+}
+
+fn writer_history_for_document(state: &AppState, document_id: RuntimeDocumentId) -> (bool, bool) {
+    let session = state
+        .documents
+        .get(document_id)
+        .expect("Writer document must remain registered");
+    let OpenDocument::Writer(writer) = session.backend() else {
+        panic!("Writer backend expected")
+    };
+    (writer.api().can_undo(), writer.api().can_redo())
+}
+
+fn writer_inline_draft_for_document(
+    state: &AppState,
+    document_id: RuntimeDocumentId,
+) -> Option<&str> {
+    state
+        .writer_text_drafts
+        .get(&document_id)
+        .map(|draft| draft.text.as_str())
+}
+
 #[test]
 fn home_ribbon_tracks_active_document_lifetime() {
     let mut state = AppState::default();
@@ -253,6 +330,785 @@ fn writer_text_editor_replaces_real_document_text_undoes_and_clears_tab_draft() 
         .close_document(document_id)
         .expect("document must close");
     assert!(!state.writer_text_drafts.contains_key(&document_id));
+}
+
+#[test]
+fn writer_inline_begin_rejects_a_deleted_block_without_opening_a_session() {
+    let (mut state, document_id, _) = writer_inline_fixture("Исходный абзац");
+    let before_text = writer_text_for_document(&state, document_id);
+    let before_revision = writer_revision_for_document(&state, document_id);
+    let before_history = writer_history_for_document(&state, document_id);
+
+    assert!(
+        state
+            .begin_writer_inline_session(document_id, u64::MAX)
+            .is_err()
+    );
+    assert!(state.writer_inline_session.is_none());
+    assert_eq!(writer_text_for_document(&state, document_id), before_text);
+    assert_eq!(
+        writer_revision_for_document(&state, document_id),
+        before_revision
+    );
+    assert_eq!(
+        writer_history_for_document(&state, document_id),
+        before_history
+    );
+}
+
+#[test]
+fn writer_inline_close_is_rejected_while_a_draft_is_unresolved() {
+    let (mut state, document_id, block_id) = writer_inline_fixture("Исходный абзац");
+    let token = state
+        .begin_writer_inline_session(document_id, block_id)
+        .expect("inline session must begin");
+    state
+        .update_writer_inline_draft(&token, "Несохранённый черновик".to_owned())
+        .expect("draft must update");
+    let before_ids = state.ordered_document_ids();
+    let before_active = state.active_document_id();
+
+    assert!(state.close_document(document_id).is_err());
+    assert_eq!(state.ordered_document_ids(), before_ids);
+    assert_eq!(state.active_document_id(), before_active);
+    assert_eq!(state.writer_inline_session.as_ref(), Some(&token));
+    assert_eq!(
+        writer_inline_draft_for_document(&state, document_id),
+        Some("Несохранённый черновик")
+    );
+}
+
+#[test]
+fn writer_inline_stale_change_and_commit_do_not_write_into_the_new_tab() {
+    let (mut state, first_id, first_block_id) = writer_inline_fixture("Документ A");
+    let token = state
+        .begin_writer_inline_session(first_id, first_block_id)
+        .expect("inline session must begin");
+    state
+        .update_writer_inline_draft(&token, "Черновик A".to_owned())
+        .expect("draft must update");
+
+    let mut second_writer = WriterViewModel::new();
+    second_writer
+        .insert_text("Документ B")
+        .expect("second fixture text must insert");
+    let second_id = attach_inactive_test_document(
+        &mut state,
+        "inline-second.docx",
+        OpenDocument::Writer(Box::new(second_writer)),
+    );
+    state
+        .activate_document(second_id)
+        .expect("second Writer tab must activate");
+    let second_text_before = writer_text_for_document(&state, second_id);
+    let second_revision_before = writer_revision_for_document(&state, second_id);
+
+    // This Changed action was stamped with A's still-live epoch before the
+    // tab switch. Preserve it on A even though delivery happens after B became
+    // active, as can happen in a single action batch.
+    state
+        .update_writer_inline_draft(&token, "Последний текст из batch A".to_owned())
+        .expect("stamped Changed must update its originating document draft");
+    assert!(
+        state
+            .commit_writer_inline_draft(&token, "Изменение из старой вкладки".to_owned())
+            .is_err()
+    );
+    assert_eq!(writer_text_for_document(&state, first_id), "Документ A");
+    assert_eq!(
+        writer_text_for_document(&state, second_id),
+        second_text_before
+    );
+    assert_eq!(
+        writer_revision_for_document(&state, second_id),
+        second_revision_before
+    );
+    assert_eq!(
+        writer_inline_draft_for_document(&state, first_id),
+        Some("Последний текст из batch A")
+    );
+    assert_eq!(writer_inline_draft_for_document(&state, second_id), None);
+    assert_eq!(state.writer_inline_session.as_ref(), Some(&token));
+}
+
+#[test]
+fn writer_inline_token_rejects_updates_after_document_registry_removal() {
+    let (mut state, first_id, first_block_id) = writer_inline_fixture("Документ A");
+    let token = state
+        .begin_writer_inline_session(first_id, first_block_id)
+        .expect("inline session must begin");
+    state
+        .update_writer_inline_draft(&token, "Fallback-черновик A".to_owned())
+        .expect("draft must update");
+
+    let mut second_writer = WriterViewModel::new();
+    second_writer
+        .insert_text("Документ B")
+        .expect("second fixture text must insert");
+    let second_id = attach_inactive_test_document(
+        &mut state,
+        "inline-removed-second.docx",
+        OpenDocument::Writer(Box::new(second_writer)),
+    );
+    state
+        .activate_document(second_id)
+        .expect("second Writer tab must activate");
+    let second_text_before = writer_text_for_document(&state, second_id);
+    let second_revision_before = writer_revision_for_document(&state, second_id);
+    let second_history_before = writer_history_for_document(&state, second_id);
+
+    // Model external teardown by removing A through the real registry API.
+    // This intentionally bypasses close_document's unresolved-draft guard.
+    state
+        .documents
+        .remove(first_id)
+        .expect("Writer A must exist in the registry");
+    assert!(state.documents.get(first_id).is_none());
+    assert_eq!(state.active_document_id(), Some(second_id));
+
+    assert!(
+        state
+            .update_writer_inline_draft(&token, "Запоздалый update A".to_owned())
+            .is_err()
+    );
+    assert!(
+        state
+            .commit_writer_inline_draft(&token, "Запоздалый commit A".to_owned())
+            .is_err()
+    );
+
+    assert_eq!(
+        writer_text_for_document(&state, second_id),
+        second_text_before
+    );
+    assert_eq!(
+        writer_revision_for_document(&state, second_id),
+        second_revision_before
+    );
+    assert_eq!(
+        writer_history_for_document(&state, second_id),
+        second_history_before
+    );
+    assert_eq!(state.writer_inline_session.as_ref(), Some(&token));
+    assert_eq!(
+        writer_inline_draft_for_document(&state, first_id),
+        Some("Fallback-черновик A")
+    );
+    assert_eq!(writer_inline_draft_for_document(&state, second_id), None);
+}
+
+#[test]
+fn writer_inline_revision_conflict_keeps_concurrent_text_and_draft() {
+    let (mut state, document_id, block_id) = writer_inline_fixture("Исходный текст");
+    let token = state
+        .begin_writer_inline_session(document_id, block_id)
+        .expect("inline session must begin");
+    state
+        .update_writer_inline_draft(&token, "Черновик пользователя".to_owned())
+        .expect("draft must update");
+    let OpenDocument::Writer(writer) = state.document_mut().expect("active Writer document") else {
+        panic!("Writer backend expected")
+    };
+    writer
+        .insert_text(" — новое изменение")
+        .expect("concurrent edit must apply");
+    let concurrent_text = writer_text_for_document(&state, document_id);
+    let concurrent_revision = writer_revision_for_document(&state, document_id);
+    let concurrent_history = writer_history_for_document(&state, document_id);
+
+    assert!(
+        state
+            .commit_writer_inline_draft(&token, "Черновик с устаревшей ревизией".to_owned())
+            .is_err()
+    );
+    assert_eq!(
+        writer_text_for_document(&state, document_id),
+        concurrent_text
+    );
+    assert_eq!(
+        writer_revision_for_document(&state, document_id),
+        concurrent_revision
+    );
+    assert_eq!(
+        writer_history_for_document(&state, document_id),
+        concurrent_history
+    );
+    assert_eq!(state.writer_inline_session.as_ref(), Some(&token));
+    assert_eq!(
+        writer_inline_draft_for_document(&state, document_id),
+        Some("Черновик пользователя")
+    );
+}
+
+#[test]
+fn writer_inline_cancelled_epoch_cannot_update_or_commit_a_reopened_session() {
+    let (mut state, document_id, block_id) = writer_inline_fixture("Тот же абзац");
+    let old_token = state
+        .begin_writer_inline_session(document_id, block_id)
+        .expect("first inline session must begin");
+    state
+        .update_writer_inline_draft(&old_token, "Старый черновик".to_owned())
+        .expect("first draft must update");
+    state
+        .cancel_writer_inline_session(&old_token)
+        .expect("first session must cancel");
+    let current_token = state
+        .begin_writer_inline_session(document_id, block_id)
+        .expect("replacement inline session must begin");
+    state
+        .update_writer_inline_draft(&current_token, "Текущий черновик".to_owned())
+        .expect("replacement draft must update");
+
+    assert!(
+        state
+            .update_writer_inline_draft(&old_token, "Запоздалый Changed".to_owned())
+            .is_err()
+    );
+    assert!(
+        state
+            .commit_writer_inline_draft(&old_token, "Запоздалый Return".to_owned())
+            .is_err()
+    );
+    assert_eq!(state.writer_inline_session.as_ref(), Some(&current_token));
+    assert_eq!(
+        writer_inline_draft_for_document(&state, document_id),
+        Some("Текущий черновик")
+    );
+    assert_eq!(
+        writer_text_for_document(&state, document_id),
+        "Тот же абзац"
+    );
+}
+
+#[test]
+fn writer_inline_commit_preserves_unicode_and_commits_one_edit() {
+    let (mut state, document_id, block_id) = writer_inline_fixture("A🙂B");
+    let token = state
+        .begin_writer_inline_session(document_id, block_id)
+        .expect("inline session must begin");
+    let revision_before = writer_revision_for_document(&state, document_id);
+    state
+        .update_writer_inline_draft(&token, "A🔥B".to_owned())
+        .expect("Unicode draft must update");
+
+    state
+        .commit_writer_inline_draft(&token, "A🔥B".to_owned())
+        .expect("Unicode text must commit");
+    assert_eq!(writer_text_for_document(&state, document_id), "A🔥B");
+    assert_eq!(
+        writer_revision_for_document(&state, document_id),
+        revision_before + 1
+    );
+    assert_eq!(
+        writer_history_for_document(&state, document_id),
+        (true, false)
+    );
+    assert!(state.writer_inline_session.is_none());
+}
+
+#[test]
+fn writer_inline_deleted_target_failure_preserves_session_draft_and_history() {
+    let mut writer = WriterViewModel::new();
+    writer
+        .insert_text("Первый абзац")
+        .expect("first fixture text must insert");
+    writer
+        .execute(WriterCommand::SplitBlock)
+        .expect("second fixture paragraph must be created");
+    writer
+        .insert_text("Удаляемый абзац")
+        .expect("second fixture text must insert");
+    let deleted_block_id = writer.snapshot().blocks[1]
+        .text_block()
+        .expect("second fixture paragraph")
+        .id
+        .get();
+    let mut state = state_with_test_document(
+        "inline-deleted.docx",
+        OpenDocument::Writer(Box::new(writer)),
+    );
+    let document_id = state.active_document_id().expect("active Writer document");
+    let token = state
+        .begin_writer_inline_session(document_id, deleted_block_id)
+        .expect("inline session must begin on second paragraph");
+    state
+        .update_writer_inline_draft(&token, "Заменяющий текст".to_owned())
+        .expect("draft must update");
+    let OpenDocument::Writer(writer) = state.document_mut().expect("active Writer document") else {
+        panic!("Writer backend expected")
+    };
+    writer
+        .set_selection(Selection::collapsed(Cursor::new(
+            TextContainerId::Block(BlockId::new(deleted_block_id)),
+            TextOffset::new(0),
+        )))
+        .expect("deleted paragraph must be selected");
+    writer
+        .execute(WriterCommand::MergeWithPrevious)
+        .expect("target paragraph must be removed");
+    assert!(
+        state
+            .writer_text_editor_blocks()
+            .iter()
+            .all(|block| block.block_id != deleted_block_id)
+    );
+    let before_failed_commit_text = writer_text_for_document(&state, document_id);
+    let before_failed_commit_revision = writer_revision_for_document(&state, document_id);
+    let before_failed_commit_history = writer_history_for_document(&state, document_id);
+
+    assert!(
+        state
+            .commit_writer_inline_draft(&token, "Заменяющий текст".to_owned())
+            .is_err()
+    );
+    assert_eq!(
+        writer_text_for_document(&state, document_id),
+        before_failed_commit_text
+    );
+    assert_eq!(
+        writer_revision_for_document(&state, document_id),
+        before_failed_commit_revision
+    );
+    assert_eq!(
+        writer_history_for_document(&state, document_id),
+        before_failed_commit_history
+    );
+    assert_eq!(state.writer_inline_session.as_ref(), Some(&token));
+    assert_eq!(
+        writer_inline_draft_for_document(&state, document_id),
+        Some("Заменяющий текст")
+    );
+}
+
+#[test]
+fn writer_inline_failed_wrong_tab_attempt_can_retry_after_returning_to_its_tab() {
+    let (mut state, first_id, first_block_id) = writer_inline_fixture("Документ A");
+    let token = state
+        .begin_writer_inline_session(first_id, first_block_id)
+        .expect("inline session must begin");
+    state
+        .update_writer_inline_draft(&token, "Документ A исправлен".to_owned())
+        .expect("draft must update");
+    let mut second_writer = WriterViewModel::new();
+    second_writer
+        .insert_text("Документ B")
+        .expect("second fixture text must insert");
+    let second_id = attach_inactive_test_document(
+        &mut state,
+        "inline-retry-second.docx",
+        OpenDocument::Writer(Box::new(second_writer)),
+    );
+    state
+        .activate_document(second_id)
+        .expect("second Writer tab must activate");
+
+    assert!(
+        state
+            .commit_writer_inline_draft(&token, "Документ A исправлен".to_owned())
+            .is_err()
+    );
+    assert_eq!(state.writer_inline_session.as_ref(), Some(&token));
+    state
+        .activate_document(first_id)
+        .expect("original Writer tab must reactivate");
+    state
+        .commit_writer_inline_draft(&token, "Документ A исправлен".to_owned())
+        .expect("same session must remain retryable");
+
+    assert_eq!(
+        writer_text_for_document(&state, first_id),
+        "Документ A исправлен"
+    );
+    assert_eq!(writer_text_for_document(&state, second_id), "Документ B");
+    assert!(state.writer_inline_session.is_none());
+}
+
+#[test]
+fn writer_inline_success_undoes_and_redoes_as_one_history_entry() {
+    let (mut state, document_id, block_id) = writer_inline_fixture("До изменения");
+    let token = state
+        .begin_writer_inline_session(document_id, block_id)
+        .expect("inline session must begin");
+    let revision_before = writer_revision_for_document(&state, document_id);
+    state
+        .commit_writer_inline_draft(&token, "После изменения".to_owned())
+        .expect("text must commit");
+    assert_eq!(
+        writer_text_for_document(&state, document_id),
+        "После изменения"
+    );
+    assert_eq!(
+        writer_revision_for_document(&state, document_id),
+        revision_before + 1
+    );
+
+    state
+        .apply_writer_home_command(WriterHomeCommand::Undo)
+        .expect("single inline edit must undo");
+    assert_eq!(
+        writer_text_for_document(&state, document_id),
+        "До изменения"
+    );
+    state
+        .apply_writer_home_command(WriterHomeCommand::Redo)
+        .expect("single inline edit must redo");
+    assert_eq!(
+        writer_text_for_document(&state, document_id),
+        "После изменения"
+    );
+}
+
+#[test]
+fn writer_inline_retired_session_cannot_commit_twice() {
+    let (mut state, document_id, block_id) = writer_inline_fixture("Исходный текст");
+    let token = state
+        .begin_writer_inline_session(document_id, block_id)
+        .expect("inline session must begin");
+    state
+        .commit_writer_inline_draft(&token, "Один раз".to_owned())
+        .expect("first commit must succeed");
+    let text_after_first_commit = writer_text_for_document(&state, document_id);
+    let revision_after_first_commit = writer_revision_for_document(&state, document_id);
+    let history_after_first_commit = writer_history_for_document(&state, document_id);
+
+    assert!(
+        state
+            .commit_writer_inline_draft(&token, "Дублированное изменение".to_owned())
+            .is_err()
+    );
+    assert_eq!(
+        writer_text_for_document(&state, document_id),
+        text_after_first_commit
+    );
+    assert_eq!(
+        writer_revision_for_document(&state, document_id),
+        revision_after_first_commit
+    );
+    assert_eq!(
+        writer_history_for_document(&state, document_id),
+        history_after_first_commit
+    );
+    assert!(state.writer_inline_session.is_none());
+}
+
+#[test]
+fn legacy_writer_editor_and_history_operations_preserve_an_active_inline_draft() {
+    let mut writer = WriterViewModel::new();
+    writer
+        .insert_text("Первый абзац")
+        .expect("first fixture paragraph must insert");
+    writer
+        .execute(WriterCommand::SplitBlock)
+        .expect("second fixture paragraph must be created");
+    writer
+        .insert_text("Второй абзац")
+        .expect("second fixture paragraph must insert");
+    let first_block_id = writer.snapshot().blocks[0]
+        .text_block()
+        .expect("first fixture paragraph")
+        .id
+        .get();
+    let mut state = state_with_test_document(
+        "inline-legacy-guard.docx",
+        OpenDocument::Writer(Box::new(writer)),
+    );
+    let document_id = state.active_document_id().expect("active Writer document");
+    let token = state
+        .begin_writer_inline_session(document_id, first_block_id)
+        .expect("inline session must begin");
+    state
+        .update_writer_inline_draft(&token, "Активный inline-черновик".to_owned())
+        .expect("inline draft must update");
+    let selected_index_before = state
+        .writer_text_editor_model()
+        .expect("Writer editor model")
+        .selected_index;
+    let text_before = writer_text_for_document(&state, document_id);
+    let revision_before = writer_revision_for_document(&state, document_id);
+    let history_before = writer_history_for_document(&state, document_id);
+
+    assert!(state.select_writer_text_editor_block(2).is_err());
+    state.update_writer_text_editor_draft("Событие старого редактора".to_owned());
+    assert!(
+        state
+            .apply_writer_text_editor("Изменение из старого редактора".to_owned())
+            .is_err()
+    );
+    assert!(state.reset_writer_text_editor_draft().is_err());
+    for command in [RibbonCommand::InsertParagraph, RibbonCommand::InsertTable] {
+        assert!(state.apply_ribbon_command(command).is_err());
+    }
+    for command in [WriterHomeCommand::Undo, WriterHomeCommand::Redo] {
+        assert!(state.apply_writer_home_command(command).is_err());
+    }
+    for command in [OfficeHistoryCommand::Undo, OfficeHistoryCommand::Redo] {
+        assert!(
+            state
+                .dispatch_history_command(document_id, command)
+                .is_err()
+        );
+    }
+
+    assert_eq!(state.writer_inline_session.as_ref(), Some(&token));
+    assert_eq!(
+        writer_inline_draft_for_document(&state, document_id),
+        Some("Активный inline-черновик")
+    );
+    assert_eq!(writer_text_for_document(&state, document_id), text_before);
+    assert_eq!(
+        writer_revision_for_document(&state, document_id),
+        revision_before
+    );
+    assert_eq!(
+        writer_history_for_document(&state, document_id),
+        history_before
+    );
+    assert_eq!(
+        state
+            .writer_text_editor_model()
+            .expect("Writer editor model remains available")
+            .selected_index,
+        selected_index_before
+    );
+}
+
+#[test]
+fn writer_failed_commit_keeps_sheets_clipboard_owner_and_separate_history() {
+    let (mut state, writer_id, writer_block_id) = writer_inline_fixture("Исходный текст Writer");
+    let token = state
+        .begin_writer_inline_session(writer_id, writer_block_id)
+        .expect("Writer inline session must begin");
+    state
+        .update_writer_inline_draft(&token, "Сохранённый черновик Writer".to_owned())
+        .expect("Writer inline draft must update");
+    let OpenDocument::Writer(writer) = state.document_mut().expect("active Writer document") else {
+        panic!("Writer backend expected");
+    };
+    writer
+        .insert_text(" — параллельное изменение")
+        .expect("concurrent Writer edit must apply");
+    let writer_text_after_concurrent_edit = writer_text_for_document(&state, writer_id);
+    let writer_history_after_concurrent_edit = writer_history_for_document(&state, writer_id);
+
+    assert!(
+        state
+            .commit_writer_inline_draft(&token, "Не применять".to_owned())
+            .is_err()
+    );
+    assert_eq!(
+        writer_inline_draft_for_document(&state, writer_id),
+        Some("Сохранённый черновик Writer")
+    );
+
+    let sheets_api = SpreadsheetApi::production();
+    let sheets_id = attach_inactive_test_document(
+        &mut state,
+        "inline-switch.xlsx",
+        OpenDocument::Sheets(sheets_api.document().snapshot()),
+    );
+    state
+        .activate_document(sheets_id)
+        .expect("Sheets document must activate while Writer draft remains open");
+    let address = CellAddress::new(
+        state
+            .sheets_view
+            .as_ref()
+            .expect("active Sheets view")
+            .active_sheet(),
+        RowIndex(0),
+        ColumnIndex(0),
+    );
+    let history_before_sheet_edit = state
+        .sheets_api
+        .as_ref()
+        .expect("active Sheets API")
+        .history_stats();
+    assert!(
+        state
+            .commit_writer_inline_draft(&token, "Не писать в активный Sheets".to_owned())
+            .is_err()
+    );
+    assert_eq!(
+        state.active_target().expect("active history owner"),
+        sheets_id
+    );
+    assert_eq!(
+        state
+            .sheets_api
+            .as_ref()
+            .expect("active Sheets API")
+            .history_stats(),
+        history_before_sheet_edit
+    );
+
+    state.sheets_select_cell(address);
+    state
+        .apply_sheets_cell_input("Отдельная запись Sheets".to_owned())
+        .expect("Sheets edit must create its own history entry");
+    let history_after_sheet_edit = state
+        .sheets_api
+        .as_ref()
+        .expect("active Sheets API")
+        .history_stats();
+    assert_ne!(history_after_sheet_edit, history_before_sheet_edit);
+    let sheets_revision_after_edit = state
+        .sheets_api
+        .as_ref()
+        .expect("active Sheets API")
+        .document()
+        .revision();
+
+    let payload = state
+        .capture_sheets_clipboard(false)
+        .expect("selected Sheets cell must produce a clipboard payload");
+    let clipboard_text = payload.tsv().to_owned();
+    // Existing AppState seam only: sequence 77 is a synthetic observation,
+    // not evidence of a native Windows clipboard write.
+    state
+        .claim_sheets_clipboard(
+            payload,
+            false,
+            windows_clipboard::ClipboardObservation {
+                text: clipboard_text.clone(),
+                sequence: 77,
+            },
+        )
+        .expect("matching synthetic observation must claim the Sheets payload");
+    let claim = state
+        .sheets_clipboard
+        .matching(77, &clipboard_text)
+        .expect("Sheets clipboard claim must be canonical for its sequence and text");
+    assert_eq!(claim.source, sheets_id);
+    assert_eq!(claim.sequence, 77);
+    assert_eq!(claim.text, clipboard_text);
+    let claim_before_retry = (
+        claim.source,
+        claim.revision,
+        claim.range.clone(),
+        claim.sequence,
+    );
+    assert!(
+        state
+            .commit_writer_inline_draft(&token, "Не менять данные Sheets".to_owned())
+            .is_err()
+    );
+    let claim_after_retry = state
+        .sheets_clipboard
+        .matching(77, &clipboard_text)
+        .expect("failed Writer commit must retain the Sheets claim");
+    assert_eq!(
+        (
+            claim_after_retry.source,
+            claim_after_retry.revision,
+            claim_after_retry.range.clone(),
+            claim_after_retry.sequence
+        ),
+        claim_before_retry
+    );
+    assert_eq!(
+        state
+            .sheets_api
+            .as_ref()
+            .expect("active Sheets API")
+            .history_stats(),
+        history_after_sheet_edit,
+        "claiming clipboard ownership must not create a Sheets undo entry"
+    );
+    assert_eq!(
+        state
+            .sheets_api
+            .as_ref()
+            .expect("active Sheets API")
+            .document()
+            .revision(),
+        sheets_revision_after_edit
+    );
+
+    assert!(
+        state
+            .dispatch_history_command(writer_id, OfficeHistoryCommand::Undo)
+            .is_err()
+    );
+    assert_eq!(
+        state.active_target().expect("active history owner"),
+        sheets_id
+    );
+    assert_eq!(
+        state
+            .sheets_api
+            .as_ref()
+            .expect("active Sheets API")
+            .history_stats(),
+        history_after_sheet_edit
+    );
+    assert_eq!(
+        state
+            .sheets_api
+            .as_ref()
+            .expect("active Sheets API")
+            .cell_view(address.sheet, address)
+            .expect("edited cell")
+            .raw_text(),
+        "Отдельная запись Sheets"
+    );
+
+    state
+        .dispatch_history_command(sheets_id, OfficeHistoryCommand::Undo)
+        .expect("Sheets history owner must undo the Sheets edit");
+    assert_eq!(
+        state
+            .sheets_api
+            .as_ref()
+            .expect("active Sheets API")
+            .cell_view(address.sheet, address)
+            .expect("undone cell")
+            .raw_text(),
+        ""
+    );
+    assert_eq!(
+        writer_text_for_document(&state, writer_id),
+        writer_text_after_concurrent_edit
+    );
+    assert_eq!(
+        writer_history_for_document(&state, writer_id),
+        writer_history_after_concurrent_edit
+    );
+    assert_eq!(
+        writer_inline_draft_for_document(&state, writer_id),
+        Some("Сохранённый черновик Writer")
+    );
+
+    state
+        .dispatch_history_command(sheets_id, OfficeHistoryCommand::Redo)
+        .expect("the separate Sheets entry must redo");
+    assert_eq!(
+        state
+            .sheets_api
+            .as_ref()
+            .expect("active Sheets API")
+            .cell_view(address.sheet, address)
+            .expect("redone cell")
+            .raw_text(),
+        "Отдельная запись Sheets"
+    );
+    assert_eq!(
+        state
+            .sheets_clipboard
+            .matching(77, &clipboard_text)
+            .expect("copy claim remains owned by Sheets")
+            .source,
+        sheets_id
+    );
+
+    state
+        .activate_document(writer_id)
+        .expect("Writer tab must reactivate with its unresolved draft");
+    assert_eq!(state.active_document_id(), Some(writer_id));
+    assert_eq!(state.writer_inline_session.as_ref(), Some(&token));
+    assert_eq!(
+        writer_inline_draft_for_document(&state, writer_id),
+        Some("Сохранённый черновик Writer")
+    );
 }
 
 #[test]

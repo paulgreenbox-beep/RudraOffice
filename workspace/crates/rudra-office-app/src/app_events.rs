@@ -604,31 +604,48 @@ impl MatchEvent for App {
             }
         }
         let writer_active = self.state.should_show_writer_view();
-        if writer_active {
-            let inline_text_input = self.ui.widget(cx, ids!(writer_inline_text_input));
-            let mut inline_commit = false;
-            let mut inline_cancel = false;
-            for action in actions.filter_widget_actions(inline_text_input.widget_uid()) {
-                match action.cast() {
-                    TextInputAction::Changed(text) if self.writer_inline_editor.is_some() => {
-                        self.state.update_writer_text_editor_draft(text);
+        let inline_text_input = self.ui.widget(cx, ids!(writer_inline_text_input));
+        let inline_actions = actions
+            .filter_widget_actions(inline_text_input.widget_uid())
+            .filter_map(|action| {
+                let token = action
+                    .data
+                    .as_ref()?
+                    .downcast_ref::<WriterInlineEditorSession>()?
+                    .clone();
+                let action = action.action.downcast_ref::<TextInputAction>()?.clone();
+                Some((token, action))
+            })
+            .collect::<Vec<_>>();
+        for (token, action) in inline_actions {
+            match action {
+                TextInputAction::Changed(text) => {
+                    if let Err(error) = self.state.update_writer_inline_draft(&token, text) {
+                        self.state.status = "Черновик Writer не обновлён.".to_owned();
+                        self.state.detail = error;
                     }
-                    TextInputAction::Returned(_, _) if self.writer_inline_editor.is_some() => {
-                        inline_commit = true;
-                    }
-                    TextInputAction::Escaped if self.writer_inline_editor.is_some() => {
-                        inline_cancel = true;
-                    }
-                    _ => {}
                 }
+                TextInputAction::Returned(text, _) => {
+                    let result = self
+                        .state
+                        .update_writer_inline_draft(&token, text.clone())
+                        .and_then(|()| {
+                            self.commit_writer_inline_editor_with_text(cx, &token, text)
+                        });
+                    self.finish_home_command(cx, result);
+                }
+                TextInputAction::Escaped => {
+                    if let Err(error) = self.cancel_writer_inline_editor_for_token(cx, &token) {
+                        self.state.status = "Черновик Writer не отменён.".to_owned();
+                        self.state.detail = error;
+                    } else {
+                        self.refresh_ui(cx);
+                    }
+                }
+                _ => {}
             }
-            if inline_cancel {
-                self.cancel_writer_inline_editor(cx);
-                self.refresh_ui(cx);
-            } else if inline_commit {
-                let result = self.commit_writer_inline_editor(cx);
-                self.finish_home_command(cx, result);
-            }
+        }
+        if writer_active {
             if self
                 .ui
                 .button(cx, ids!(writer_edit_text_button))
@@ -874,7 +891,31 @@ impl AppMain for App {
         }
         self.prepare_writer_zoom_popup(cx, event);
         self.match_event(cx, event);
-        self.ui.handle_event(cx, event, &mut Scope::empty());
+        let inline_session = self.writer_inline_editor.clone();
+        let inline_uid = self
+            .ui
+            .widget(cx, ids!(writer_inline_text_input))
+            .widget_uid();
+        cx.mutate_actions(
+            |cx| self.ui.handle_event(cx, event, &mut Scope::empty()),
+            |new_actions| {
+                for action in new_actions {
+                    let Some(widget_action) = action.downcast_mut::<WidgetAction>() else {
+                        continue;
+                    };
+                    if widget_action.widget_uid == inline_uid
+                        && widget_action
+                            .action
+                            .downcast_ref::<TextInputAction>()
+                            .is_some()
+                    {
+                        widget_action.data = inline_session
+                            .as_ref()
+                            .map(|session| Arc::new(session.clone()) as Arc<dyn ActionTrait>);
+                    }
+                }
+            },
+        );
         if matches!(event, Event::Draw(_)) {
             self.apply_launcher_startup_request(cx);
         }
@@ -882,7 +923,10 @@ impl AppMain for App {
         if matches!(event, Event::Draw(_)) {
             self.refresh_writer_status_after_draw(cx);
         }
-        if matches!(event, Event::Draw(_)) && self.writer_inline_editor_pending_focus {
+        if matches!(event, Event::Draw(_))
+            && self.writer_inline_editor_pending_focus
+            && self.writer_inline_editor_matches_active_document()
+        {
             let inline_input = self.ui.text_input(cx, ids!(writer_inline_text_input));
             let area = inline_input.area();
             if !area.is_empty() {
