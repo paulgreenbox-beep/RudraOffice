@@ -56,8 +56,8 @@ test('isolated Writer API production source triggers history/session risks witho
   const plan = planVerification(policy, {milestone_id: 'SYNTHETIC-WRITER-API', changed_files: ['writer/crates/writer-api/src/lib.rs']});
   assert.deepEqual(plan.unmapped_changes, {files: [], modules: []});
   assert.equal(plan.l4b_required, true);
-  for (const id of ['global-undo-redo', 'tabs-session-activation']) assert.ok(plan.risk_triggers.includes(id), id);
-  for (const id of ['expanded-office-sessions', 'expanded-sheets-composition']) assert.ok(plan.selected_scenario_ids.includes(id), id);
+  for (const id of ['global-undo-redo', 'tabs-session-activation', 'persistence-save']) assert.ok(plan.risk_triggers.includes(id), id);
+  for (const id of ['writer-parser-focused', 'expanded-office-sessions', 'expanded-sheets-composition']) assert.ok(plan.selected_scenario_ids.includes(id), id);
   for (const id of ['writer-core-crate', 'writer-api-crate', 'app-state']) assert.ok([...plan.required.L0, ...plan.required.L1, ...plan.required.L2].some(t => t.id === id), id);
   assert.equal(plan.execution.updates_acceptance, false);
   assert.equal(JSON.stringify(policy), before);
