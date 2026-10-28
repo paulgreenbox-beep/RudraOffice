@@ -422,6 +422,80 @@ mod tests {
     use self::core::{BlockId, Cursor, TextContainerId, TextOffset};
     use super::*;
 
+    const SYNTHETIC_BASIC_DOCX: &[u8] =
+        include_bytes!("../../../../fixtures/public/writer/synthetic-basic.docx");
+
+    #[cfg(feature = "private-fixtures")]
+    fn private_layout_docx_bytes() -> Vec<u8> {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../fixtures/release-acceptance/docx/writer-layout-a4-multipage.docx");
+        std::fs::read(&path).unwrap_or_else(|error| {
+            panic!("failed to read private DOCX fixture at {path:?}: {error}")
+        })
+    }
+
+    fn assert_imported_docx_is_clean_undo_baseline_and_first_edit_redoes(mut api: WriterApi) {
+        let imported = api.document();
+
+        assert!(!api.can_undo(), "DOCX import must start a clean history");
+        assert!(!api.can_redo());
+
+        api.insert_text(" regression edit").unwrap();
+        let edited = api.document();
+        assert_ne!(edited.blocks, imported.blocks);
+        assert!(api.can_undo(), "the first user edit must be undoable");
+        assert!(!api.can_redo());
+
+        assert!(api.undo().unwrap());
+        assert_eq!(api.document().blocks, imported.blocks);
+        assert!(!api.can_undo(), "undo must stop at the imported baseline");
+        assert!(api.can_redo());
+
+        assert!(api.redo().unwrap());
+        assert_eq!(api.document().blocks, edited.blocks);
+        assert!(api.can_undo());
+        assert!(!api.can_redo());
+    }
+
+    fn assert_page_break_starts_following_content_on_new_page(api: &WriterApi, marker: &str) {
+        let document = api.document();
+        let layout = api.layout().expect("layout controlled DOCX fixture");
+
+        assert_eq!(
+            layout.page_count(),
+            2,
+            "explicit DOCX page break must create page 2"
+        );
+        assert!(
+            layout.pages[1]
+                .blocks
+                .iter()
+                .filter_map(|layout_block| document.blocks.get(layout_block.source_block_index))
+                .filter_map(core::BlockSnapshot::text_block)
+                .any(|block| block.text.contains(marker))
+        );
+    }
+
+    fn assert_docx_header_footer_distances_are_editable_in_session(mut api: WriterApi) {
+        assert!(!api.docx_layout().sections.is_empty());
+        assert!(api.set_header_distance_half_points(73));
+        assert!(api.set_footer_distance_half_points(85));
+        let section = &api.docx_layout().sections[0];
+        assert_eq!(section.header_distance_twips, 730);
+        assert_eq!(section.footer_distance_twips, 850);
+        assert!(!api.set_header_distance_half_points(73));
+        assert!(!api.set_footer_distance_half_points(85));
+    }
+
+    fn nonempty_text_blocks(document: &core::DocumentSnapshot) -> Vec<&core::TextBlockSnapshot> {
+        document
+            .blocks
+            .iter()
+            .filter_map(core::BlockSnapshot::text_block)
+            .filter(|block| !block.text.is_empty())
+            .collect()
+    }
+
     #[test]
     fn facade_covers_edit_undo_redo_and_export() {
         let mut api = WriterApi::new();
@@ -606,32 +680,19 @@ mod tests {
         assert_eq!(api.document().blocks[0].text(), Some("roundtrip"));
     }
 
+    #[cfg(feature = "private-fixtures")]
     #[test]
     fn imported_real_docx_is_clean_undo_baseline_and_first_edit_redoes() {
-        let bytes = include_bytes!(
-            "../../../../fixtures/release-acceptance/docx/writer-layout-a4-multipage.docx"
-        );
-        let mut api = WriterApi::from_docx(bytes).expect("import controlled DOCX fixture");
-        let imported = api.document();
+        let bytes = private_layout_docx_bytes();
+        let api = WriterApi::from_docx(&bytes).expect("import controlled DOCX fixture");
+        assert_imported_docx_is_clean_undo_baseline_and_first_edit_redoes(api);
+    }
 
-        assert!(!api.can_undo(), "DOCX import must start a clean history");
-        assert!(!api.can_redo());
-
-        api.insert_text(" regression edit").unwrap();
-        let edited = api.document();
-        assert_ne!(edited.blocks, imported.blocks);
-        assert!(api.can_undo(), "the first user edit must be undoable");
-        assert!(!api.can_redo());
-
-        assert!(api.undo().unwrap());
-        assert_eq!(api.document().blocks, imported.blocks);
-        assert!(!api.can_undo(), "undo must stop at the imported baseline");
-        assert!(api.can_redo());
-
-        assert!(api.redo().unwrap());
-        assert_eq!(api.document().blocks, edited.blocks);
-        assert!(api.can_undo());
-        assert!(!api.can_redo());
+    #[test]
+    fn imported_public_synthetic_docx_is_clean_undo_baseline_and_first_edit_redoes() {
+        let api = WriterApi::from_docx(SYNTHETIC_BASIC_DOCX)
+            .expect("import public synthetic DOCX fixture");
+        assert_imported_docx_is_clean_undo_baseline_and_first_edit_redoes(api);
     }
 
     #[test]
@@ -646,45 +707,143 @@ mod tests {
         assert!(!api.can_redo());
     }
 
+    #[cfg(feature = "private-fixtures")]
     #[test]
     fn external_docx_page_break_starts_following_content_on_new_page() {
-        let bytes = include_bytes!(
-            "../../../../fixtures/release-acceptance/docx/writer-layout-a4-multipage.docx"
-        );
-        let api = WriterApi::from_docx(bytes).expect("import controlled DOCX fixture");
-        let document = api.document();
-        let layout = api.layout().expect("layout controlled DOCX fixture");
-
-        assert_eq!(
-            layout.page_count(),
-            2,
-            "explicit DOCX page break must create page 2"
-        );
-        assert!(
-            layout.pages[1]
-                .blocks
-                .iter()
-                .filter_map(|layout_block| document.blocks.get(layout_block.source_block_index))
-                .filter_map(core::BlockSnapshot::text_block)
-                .any(|block| block.text.contains("Вторая страница"))
-        );
+        let bytes = private_layout_docx_bytes();
+        let api = WriterApi::from_docx(&bytes).expect("import controlled DOCX fixture");
+        assert_page_break_starts_following_content_on_new_page(&api, "Вторая страница");
     }
 
     #[test]
-    fn loaded_docx_header_footer_distances_are_editable_in_session() {
-        let bytes = include_bytes!(
-            "../../../../fixtures/release-acceptance/docx/writer-layout-a4-multipage.docx"
-        );
-        let mut api = WriterApi::from_docx(bytes).expect("import controlled DOCX fixture");
-        assert!(!api.docx_layout().sections.is_empty());
-        assert!(api.set_header_distance_half_points(73));
-        assert!(api.set_footer_distance_half_points(85));
-        let section = &api.docx_layout().sections[0];
-        assert_eq!(section.header_distance_twips, 730);
-        assert_eq!(section.footer_distance_twips, 850);
-        assert!(!api.set_header_distance_half_points(73));
-        assert!(!api.set_footer_distance_half_points(85));
+    fn public_synthetic_docx_page_break_starts_following_content_on_new_page() {
+        let api = WriterApi::from_docx(SYNTHETIC_BASIC_DOCX)
+            .expect("import public synthetic DOCX fixture");
+        assert_page_break_starts_following_content_on_new_page(&api, "Учебная страница 😀");
     }
+
+    #[cfg(feature = "private-fixtures")]
+    #[test]
+    fn loaded_docx_header_footer_distances_are_editable_in_session() {
+        let bytes = private_layout_docx_bytes();
+        let api = WriterApi::from_docx(&bytes).expect("import controlled DOCX fixture");
+        assert_docx_header_footer_distances_are_editable_in_session(api);
+    }
+
+    #[test]
+    fn public_synthetic_docx_header_footer_distances_are_editable_in_session() {
+        let api = WriterApi::from_docx(SYNTHETIC_BASIC_DOCX)
+            .expect("import public synthetic DOCX fixture");
+        assert_docx_header_footer_distances_are_editable_in_session(api);
+    }
+
+    #[test]
+    fn public_synthetic_docx_preserves_styled_unicode_through_edit_and_body_roundtrip() {
+        let mut api = WriterApi::from_docx(SYNTHETIC_BASIC_DOCX)
+            .expect("import public synthetic DOCX fixture");
+        let imported_document = api.document();
+        let imported_paragraphs = nonempty_text_blocks(&imported_document);
+
+        assert_eq!(imported_paragraphs.len(), 2);
+        assert_eq!(imported_paragraphs[0].text, "Рассвет 🙂на орбите");
+        assert_eq!(imported_paragraphs[1].text, "Учебная страница 😀");
+        assert_eq!(
+            imported_paragraphs[0]
+                .runs
+                .iter()
+                .map(|run| (run.text.as_str(), run.style.bold(), run.style.italic()))
+                .collect::<Vec<_>>(),
+            vec![("Рассвет ", true, false), ("🙂на орбите", false, true)]
+        );
+
+        let layout = api.docx_layout();
+        assert_eq!(layout.sections.len(), 1);
+        let section = &layout.sections[0];
+        assert_eq!(section.width_twips, 11_906);
+        assert_eq!(section.height_twips, 16_838);
+        assert_eq!(section.header_text, "Синтетический верх");
+        assert_eq!(section.footer_text, "Синтетический низ");
+        assert!(!api.can_undo(), "DOCX import must start a clean history");
+        assert!(!api.can_redo());
+
+        let first_paragraph = imported_paragraphs[0];
+        api.set_selection(Selection::collapsed(Cursor::new(
+            TextContainerId::Block(first_paragraph.id),
+            TextOffset::new(first_paragraph.text.chars().count()),
+        )))
+        .expect("the first paragraph end is a valid cursor");
+        let imported_blocks = api.document().blocks;
+        api.insert_text(" ✓").expect("append a Unicode edit");
+        let edited_blocks = api.document().blocks;
+        let edited_document = api.document();
+        let edited_paragraphs = nonempty_text_blocks(&edited_document);
+        assert_eq!(edited_paragraphs[0].text, "Рассвет 🙂на орбите ✓");
+        let imported_styles = imported_paragraphs[0]
+            .runs
+            .iter()
+            .flat_map(|run| {
+                run.text
+                    .chars()
+                    .map(move |ch| (ch, run.style.bold(), run.style.italic()))
+            })
+            .collect::<Vec<_>>();
+        let edited_styles = edited_paragraphs[0]
+            .runs
+            .iter()
+            .flat_map(|run| {
+                run.text
+                    .chars()
+                    .map(move |ch| (ch, run.style.bold(), run.style.italic()))
+            })
+            .collect::<Vec<_>>();
+        assert!(
+            edited_styles.starts_with(&imported_styles),
+            "editing must retain the existing characters' styles"
+        );
+        assert_ne!(edited_blocks, imported_blocks);
+        assert!(api.can_undo());
+        assert!(!api.can_redo());
+
+        assert!(api.undo().expect("undo the public fixture edit"));
+        assert_eq!(api.document().blocks, imported_blocks);
+        assert!(api.can_redo());
+        assert!(api.redo().expect("redo the public fixture edit"));
+        assert_eq!(api.document().blocks, edited_blocks);
+
+        let exported = api.export_docx().expect("export edited body as DOCX");
+        let reimported =
+            WriterApi::from_docx(&exported).expect("reimport edited public fixture body");
+        let reimported_document = reimported.document();
+        let reimported_paragraphs = nonempty_text_blocks(&reimported_document);
+        assert_eq!(reimported_paragraphs.len(), 2);
+        assert_eq!(reimported_paragraphs[0].text, "Рассвет 🙂на орбите ✓");
+        assert_eq!(reimported_paragraphs[1].text, "Учебная страница 😀");
+        for (actual, expected) in reimported_paragraphs.iter().zip(&edited_paragraphs) {
+            let actual_styles = actual
+                .runs
+                .iter()
+                .flat_map(|run| {
+                    run.text
+                        .chars()
+                        .map(move |ch| (ch, run.style.bold(), run.style.italic()))
+                })
+                .collect::<Vec<_>>();
+            let expected_styles = expected
+                .runs
+                .iter()
+                .flat_map(|run| {
+                    run.text
+                        .chars()
+                        .map(move |ch| (ch, run.style.bold(), run.style.italic()))
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(
+                actual_styles, expected_styles,
+                "export/reimport must preserve supported body run styles"
+            );
+        }
+    }
+
     #[test]
     fn from_docx_loads_document() {
         let mut api = WriterApi::new();

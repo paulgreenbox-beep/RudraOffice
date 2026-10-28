@@ -1737,13 +1737,22 @@ mod tests {
 
     #[test]
     fn controlled_pptx_projects_shapes_tables_and_unknown_graphics() {
-        const CONTROLLED: &[u8] = include_bytes!(
-            "../../../../fixtures/release-acceptance/pptx/controlled-acceptance.pptx"
-        );
+        const CONTROLLED: &[u8] =
+            include_bytes!("../../../../fixtures/public/slides/controlled-projection.pptx");
+        assert_controlled_pptx_projection(CONTROLLED);
+    }
 
-        let loaded = OfficeOxideCodec
-            .decode(CONTROLLED, &Limits::default())
-            .unwrap();
+    #[test]
+    #[ignore = "requires private operator PPTX in RUDRA_SLIDES_CONTROLLED_PPTX"]
+    fn private_controlled_pptx_projection() {
+        let path = std::env::var_os("RUDRA_SLIDES_CONTROLLED_PPTX")
+            .expect("set RUDRA_SLIDES_CONTROLLED_PPTX for this explicit private regression");
+        let bytes = std::fs::read(path).expect("private controlled PPTX must be readable");
+        assert_controlled_pptx_projection(&bytes);
+    }
+
+    fn assert_controlled_pptx_projection(bytes: &[u8]) {
+        let loaded = OfficeOxideCodec.decode(bytes, &Limits::default()).unwrap();
         assert_eq!(loaded.slides.len(), 3);
         assert!(
             loaded.slides[0]

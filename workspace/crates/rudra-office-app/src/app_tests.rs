@@ -3,6 +3,15 @@ use slides_api::{PresentationId, Slide, SlideId};
 
 const PNG_SIGNATURE: [u8; 8] = [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A];
 
+fn controlled_writer_fixture_path() -> PathBuf {
+    let relative = if cfg!(feature = "private-fixtures") {
+        "../../../fixtures/release-acceptance/docx/writer-layout-a4-multipage.docx"
+    } else {
+        "../../../fixtures/public/writer/synthetic-grid.docx"
+    };
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(relative)
+}
+
 #[test]
 fn blank_documents_use_normal_open_pipeline_and_export_reopens() {
     for (format, expected_module) in [
@@ -749,8 +758,7 @@ fn writer_ruler_maps_left_right_and_first_line_markers() {
 
 #[test]
 fn writer_ruler_header_and_footer_positions_update_session_layout() {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../../fixtures/release-acceptance/docx/writer-layout-a4-multipage.docx");
+    let path = controlled_writer_fixture_path();
     let bytes = std::fs::read(&path).expect("controlled Writer fixture must be readable");
     let mut pdf_engine = PdfOxideAdapter::default();
     let (document, _, _) = OpenDocument::open(&path, &bytes, &mut pdf_engine)
@@ -789,8 +797,7 @@ fn writer_ruler_header_and_footer_positions_update_session_layout() {
 
 #[test]
 fn writer_home_font_size_reaches_controlled_visual_frame() {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../../fixtures/release-acceptance/docx/writer-layout-a4-multipage.docx");
+    let path = controlled_writer_fixture_path();
     let bytes = std::fs::read(&path).expect("controlled Writer fixture must be readable");
     let mut pdf_engine = PdfOxideAdapter::default();
     let (document, _, _) = OpenDocument::open(&path, &bytes, &mut pdf_engine)
@@ -3025,10 +3032,10 @@ fn writer_zoom_label_uses_exact_percent_and_gated_by_module() {
 }
 
 #[test]
+#[ignore = "requires explicit RUDRA_WRITER_ACCEPTANCE_DOCX operator fixture"]
 fn writer_real_docx_acceptance_contract_when_path_is_provided() {
-    let Some(path) = std::env::var_os("RUDRA_WRITER_ACCEPTANCE_DOCX") else {
-        return;
-    };
+    let path = std::env::var_os("RUDRA_WRITER_ACCEPTANCE_DOCX")
+        .expect("set the private operator fixture for this explicit acceptance test");
     let path = PathBuf::from(path);
     let bytes = std::fs::read(&path).expect("acceptance DOCX must be readable");
     let mut pdf_engine = PdfOxideAdapter::default();
@@ -3095,8 +3102,35 @@ fn writer_real_docx_acceptance_contract_when_path_is_provided() {
 
 #[test]
 fn writer_controlled_fixture_preserves_visible_content_classes() {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../../fixtures/release-acceptance/docx/writer-layout-a4-multipage.docx");
+    let path = controlled_writer_fixture_path();
+    let (margin, paragraphs, bold_marker, columns, rows, cells, header, footer) =
+        if cfg!(feature = "private-fixtures") {
+            (
+                102,
+                [
+                    "Контролируемая приёмка Writer",
+                    "Кириллица:",
+                    "Вторая страница",
+                ],
+                "Кириллица:",
+                3,
+                4,
+                vec!["Проверка", "Текст и Unicode", "Русский текст отображается"],
+                "Rudra Office — controlled acceptance",
+                "Viewer-only fixture",
+            )
+        } else {
+            (
+                144,
+                ["Рассвет", "🙂на орбите", "Учебная"],
+                "Рассвет",
+                3,
+                4,
+                vec!["Ячейка 1.1", "Ячейка 3.2", "Ячейка 4.3"],
+                "Синтетический верх",
+                "Синтетический низ",
+            )
+        };
     let bytes = std::fs::read(&path).expect("controlled Writer fixture must be readable");
     let mut pdf_engine = PdfOxideAdapter::default();
     let (document, _, _) = OpenDocument::open(&path, &bytes, &mut pdf_engine)
@@ -3127,10 +3161,10 @@ fn writer_controlled_fixture_preserves_visible_content_classes() {
     assert!(frame.pages.iter().all(|page| {
         page.width_half_points == 1191
             && page.height_half_points == 1684
-            && page.margins.top_half_points == 102
-            && page.margins.right_half_points == 102
-            && page.margins.bottom_half_points == 102
-            && page.margins.left_half_points == 102
+            && page.margins.top_half_points == margin
+            && page.margins.right_half_points == margin
+            && page.margins.bottom_half_points == margin
+            && page.margins.left_half_points == margin
     }));
     assert!(
         !frame.truncated,
@@ -3152,9 +3186,12 @@ fn writer_controlled_fixture_preserves_visible_content_classes() {
             _ => None,
         })
         .collect::<String>();
-    assert!(paragraph_text.contains("Контролируемая приёмка Writer"));
-    assert!(paragraph_text.contains("Кириллица:"));
-    assert!(paragraph_text.contains("Вторая страница"));
+    for expected in paragraphs {
+        assert!(
+            paragraph_text.contains(expected),
+            "missing body text: {expected}"
+        );
+    }
     assert!(
         frame
             .pages
@@ -3164,7 +3201,7 @@ fn writer_controlled_fixture_preserves_visible_content_classes() {
                 writer_page_view::WriterVisualBlock::Paragraph(paragraph) => paragraph
                     .runs
                     .iter()
-                    .any(|run| run.text.contains("Кириллица:") && run.style.bold),
+                    .any(|run| run.text.contains(bold_marker) && run.style.bold),
                 _ => false,
             })
     );
@@ -3184,9 +3221,9 @@ fn writer_controlled_fixture_preserves_visible_content_classes() {
         "the controlled table must survive projection"
     );
     let table = visual_tables[0];
-    assert_eq!(table.columns.len(), 3);
-    assert_eq!(table.rows.len(), 4);
-    assert!(table.rows.iter().all(|row| row.cells.len() == 3));
+    assert_eq!(table.columns.len(), columns);
+    assert_eq!(table.rows.len(), rows);
+    assert!(table.rows.iter().all(|row| row.cells.len() == columns));
     let table_text = table
         .rows
         .iter()
@@ -3194,9 +3231,12 @@ fn writer_controlled_fixture_preserves_visible_content_classes() {
         .map(|cell| cell.text.as_str())
         .collect::<Vec<_>>()
         .join("\n");
-    assert!(table_text.contains("Проверка"));
-    assert!(table_text.contains("Текст и Unicode"));
-    assert!(table_text.contains("Русский текст отображается"));
+    for expected in cells {
+        assert!(
+            table_text.contains(expected),
+            "missing table text: {expected}"
+        );
+    }
     assert!(table.columns.iter().all(|width| *width > 0));
     assert!(table.rows.iter().all(|row| row.height_half_points > 0));
 
@@ -3227,21 +3267,21 @@ fn writer_controlled_fixture_preserves_visible_content_classes() {
         first_page
             .header
             .as_ref()
-            .is_some_and(|header| header.text.contains("Rudra Office — controlled acceptance"))
+            .is_some_and(|actual| actual.text.contains(header))
     );
     assert!(
         first_page
             .footer
             .as_ref()
-            .is_some_and(|footer| footer.text.contains("Viewer-only fixture"))
+            .is_some_and(|actual| actual.text.contains(footer))
     );
 }
 
 #[test]
+#[ignore = "requires explicit RUDRA_WRITER_JPEG_FIXTURE operator fixture"]
 fn writer_jpeg_fixture_imports_a_real_jpeg_image_when_path_is_provided() {
-    let Some(path) = std::env::var_os("RUDRA_WRITER_JPEG_FIXTURE") else {
-        return;
-    };
+    let path = std::env::var_os("RUDRA_WRITER_JPEG_FIXTURE")
+        .expect("set the private JPEG document for this explicit acceptance test");
     let path = PathBuf::from(path);
     let bytes = std::fs::read(&path).expect("JPEG fixture DOCX must be readable");
     let mut pdf_engine = PdfOxideAdapter::default();

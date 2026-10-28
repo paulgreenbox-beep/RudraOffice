@@ -125,20 +125,12 @@ fn png_dimensions(png: &[u8]) -> (u32, u32) {
     )
 }
 
-#[test]
-fn two_byte_cid_unicode_spaces_do_not_receive_word_spacing() {
-    // A single font + Tj run reduced from the real private-acceptance-pdf.pdf cover.
-    // Both files contain two-byte Identity-H CID 0003 mapping to Unicode SPACE.
-    // PDF word spacing applies to single-byte source code 32, not that mapping.
-    let trigger = include_bytes!(
-        "../../../../fixtures/pdf-reliability/cid-word-spacing/cid-unicode-space-tw.pdf"
-    );
-    let control = include_bytes!(
-        "../../../../fixtures/pdf-reliability/cid-word-spacing/cid-unicode-space-control.pdf"
-    );
+fn assert_cid_word_spacing_renders_identically(trigger: &[u8], control: &[u8]) -> image::RgbaImage {
     let mut engine = PdfOxideAdapter::default();
     let first = engine.parse(trigger).unwrap();
     let second = engine.parse(control).unwrap();
+    assert_eq!(first.page_count, 1);
+    assert_eq!(second.page_count, 1);
     let render = |engine: &mut PdfOxideAdapter, id| {
         let png = engine.render_page(id, PageId::new(1), 1.0).unwrap();
         image::load_from_memory_with_format(&png, image::ImageFormat::Png)
@@ -153,6 +145,89 @@ fn two_byte_cid_unicode_spaces_do_not_receive_word_spacing() {
         with_tw.as_raw() == without_tw.as_raw(),
         "Tw must not change two-byte CID text merely because ToUnicode maps a CID to SPACE"
     );
+    without_tw
+}
+
+#[test]
+fn two_byte_cid_unicode_spaces_do_not_receive_word_spacing() {
+    // These original, synthetic fixtures use Type0 /Identity-H and CID 0003
+    // mapped to U+0020. The handcrafted embedded font has only a Mac cmap,
+    // so the intended direct CID-to-GID render path is exercised. PDF word
+    // spacing applies to single-byte source code 32, not that Unicode mapping.
+    let trigger = include_bytes!("../../../../fixtures/public/pdf/cid-unicode-space-tw.pdf");
+    let control = include_bytes!("../../../../fixtures/public/pdf/cid-unicode-space-control.pdf");
+    for bytes in [trigger.as_slice(), control.as_slice()] {
+        for token in [
+            b"/Encoding /Identity-H".as_slice(),
+            b"/CIDToGIDMap /Identity".as_slice(),
+            b"<0003> <0020>".as_slice(),
+            b"<000100030002> Tj".as_slice(),
+        ] {
+            assert!(bytes.windows(token.len()).any(|window| window == token));
+        }
+    }
+    assert_eq!(trigger.len(), control.len());
+    assert_eq!(
+        trigger
+            .iter()
+            .zip(control.iter())
+            .filter(|(a, b)| a != b)
+            .count(),
+        1,
+        "the two files must differ only in the Tw operand"
+    );
+    assert!(trigger
+        .windows(b"40.000 Tw".len())
+        .any(|w| w == b"40.000 Tw"));
+    assert!(control
+        .windows(b"00.000 Tw".len())
+        .any(|w| w == b"00.000 Tw"));
+
+    let image = assert_cid_word_spacing_renders_identically(trigger, control);
+    assert_eq!(image.dimensions(), (200, 100));
+    let dark_in = |left: u32, right: u32| {
+        image.enumerate_pixels().any(|(x, _, pixel)| {
+            (left..right).contains(&x)
+                && pixel[0] < 100
+                && pixel[1] < 100
+                && pixel[2] < 100
+                && pixel[3] > 200
+        })
+    };
+    assert!(
+        dark_in(19, 31),
+        "the synthetic A before the space must be visible"
+    );
+    assert!(
+        dark_in(44, 56),
+        "the synthetic B after the space must be visible"
+    );
+}
+
+#[test]
+fn public_synthetic_cid_preserves_non_ascii_unicode() {
+    let bytes = include_bytes!("../../../../fixtures/public/pdf/cid-cyrillic.pdf");
+    let backend = pdf_oxide::PdfDocument::from_bytes(bytes.to_vec()).unwrap();
+    let text = backend.extract_text(0).unwrap();
+    assert_eq!(text.split_whitespace().collect::<Vec<_>>().join(" "), "А Б");
+    let mut adapter = PdfOxideAdapter::default();
+    assert_eq!(adapter.parse(bytes).unwrap().page_count, 1);
+}
+
+#[test]
+#[ignore = "requires private reduced PDFs in RUDRA_PDF_PRIVATE_WORD_SPACING_DIR"]
+fn private_cid_unicode_space_regression() {
+    // Retain the original source-derived case for an explicit local-only run.
+    // The private PDFs and the font they contain are never embedded or shipped.
+    let directory = std::path::PathBuf::from(
+        std::env::var_os("RUDRA_PDF_PRIVATE_WORD_SPACING_DIR")
+            .expect("set RUDRA_PDF_PRIVATE_WORD_SPACING_DIR for this ignored test"),
+    );
+    let trigger = std::fs::read(directory.join("cid-unicode-space-tw.pdf"))
+        .expect("read private trigger PDF");
+    let control = std::fs::read(directory.join("cid-unicode-space-control.pdf"))
+        .expect("read private control PDF");
+    let _ = assert_cid_word_spacing_renders_identically(&trigger, &control);
 }
 
 #[test]

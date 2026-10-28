@@ -1,15 +1,56 @@
 # Private and missing acceptance fixtures
 
-No DOCX/XLSX/PDF/PPTX file from the working project was copied into this public baseline, including reduced documents derived from user input. Test source and assertions remain present.
+No user DOCX/XLSX/PDF/PPTX or reduced user-derived document is part of the public corpus. Test source and original private-fixture assertions remain present.
 
-The following compile-time inputs are referenced by tests and must not be mistaken for public test coverage:
+RDO-002 adds an independently generated, narrowly allowlisted corpus under
+`fixtures/public/`. See its `README.md` and `manifest.json` for exact provenance,
+generator commands and SHA-256 values. No operator document, external embedded
+font or third-party image was used to create these eight files.
+
+Default Writer tests use synthetic documents. Original private-layout/fidelity
+tests require the explicit `private-fixtures` feature in `writer-api` or
+`writer-docx`; enabling it still requires the original private files below.
+The private PDF CID regression is an explicitly ignored, environment-selected
+runtime test, not a compile-time include. The public CID regression uses a
+self-authored minimal font. The missing controlled Slides document is replaced
+by a synthetic shape/table/unsupported-graphic package without dropping its
+existing structural assertions. Additional import/export and selection tests
+use a second synthetic PPTX.
+
+The original controlled Slides input remains a separate ignored runtime test,
+sharing exactly the same projection assertions as the public synthetic input:
+
+```powershell
+$env:RUDRA_SLIDES_CONTROLLED_PPTX = 'C:/operator-fixtures/controlled-acceptance.pptx'
+cargo test --manifest-path slides/Cargo.toml --locked -j 1 -p slides-pptx-adapter private_controlled_pptx_projection -- --ignored
+```
+
+This must be explicitly requested. A missing variable or unreadable private
+file fails; it never silently returns PASS. No private file is distributed.
+The added ignored test increases the default combined baseline from four to
+five explicit ignored cases; it does not reduce the 812 passing Rust tests.
+
+
+App integration uses the public multi-page 4-row/3-column grid document by default. Its explicit
+`private-fixtures` feature selects the original layout document and retains the
+original geometry/text/table/header/footer expectations. The real-DOCX and JPEG
+environment-selected app tests are explicitly ignored until requested with
+`--ignored`; an absent environment variable then fails rather than silently
+returning PASS. This is a visible skip, not accepted real-document coverage.
+
+These changes make fixture ownership explicit; they do not establish successful
+Cargo, renderer, GUI or full round-trip acceptance. In particular, imported
+Writer header/footer metadata is tested, but its export fidelity remains a
+known limitation. See the task's actual test receipts before claiming PASS.
+
+The following historical private inputs remain opt-in and must not be mistaken for public test coverage:
 
 - Writer API/DOCX tests: fixtures/release-acceptance/docx/writer-layout-a4-multipage.docx and writer-visual-fidelity-fixture.docx. One local controlled document also embeds an image with unreviewed independent provenance; another is already missing from the current development tree.
 - PDF word-spacing regression: fixtures/pdf-reliability/cid-word-spacing/*.pdf. These contain a text run and embedded font reduced from a user document, not a wholly synthetic/licensed public fixture. Both documents and their identifying README are excluded.
 - Slides adapter test: fixtures/release-acceptance/pptx/controlled-acceptance.pptx is already missing from the current development tree.
 
-Because the retained tests use include_bytes!, full affected test targets may fail at compilation without this corpus. The baseline does not hide that by deleting tests, dropping assertions, changing production logic, embedding placeholders or reporting false PASS. Pure packages without these inputs can be checked independently.
+Default targets no longer deliberately include these absent private bytes at compile time. Explicit private-fixture runs still require their original files at runtime. Actual compilation, rendering and test results remain separate gates; retaining source assertions does not establish a PASS.
 
-A future public fixture replacement must be generated independently with reviewed image/font licenses and preserve the actual regression trigger/assertions. Do not upload the operator's real corpus or embedded proprietary fonts. Keep operator-provided inputs outside version control; .gitignore rejects the document formats by default.
+Future corpus additions must be generated independently with reviewed image/font provenance and preserve actual regression triggers/assertions. Do not upload the operator's real corpus or embedded proprietary fonts. Keep operator-provided inputs outside version control; .gitignore rejects document formats except the eight exact reviewed synthetic paths.
 
 Historical GUI recipes use sanitized template paths and retained diagnostic RC identities. They are examples until bound to fresh operator-owned fixtures and a qualified executable. Recipe validation is not execution or acceptance.

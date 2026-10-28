@@ -1591,6 +1591,33 @@ mod tests {
     }
 
     #[test]
+    fn public_pptx_fixture_navigation_selects_the_imported_slide() {
+        const SUPPORTED: &[u8] =
+            include_bytes!("../../../../fixtures/public/slides/supported-roundtrip.pptx");
+
+        let engine = slides_pptx_adapter::office_oxide_adapter();
+        let document = engine.load(SUPPORTED).unwrap();
+        let mut ui = EditorUi::from_pptx(&engine, SUPPORTED).unwrap();
+        assert!(ui.read_only());
+        assert_eq!(ui.thumbnails.len(), 2);
+        assert_eq!(ui.current_slide_index(), Some(0));
+        assert_eq!(ui.current_slide_id(), Some(document.slides[0].id));
+
+        ui.apply_local_action(&UiAction::NextSlide).unwrap();
+        assert_eq!(ui.current_slide_index(), Some(1));
+        assert_eq!(ui.current_slide_id(), Some(document.slides[1].id));
+        assert_eq!(ui.canvas.slide_id, Some(document.slides[1].id));
+        assert_eq!(ui.notes.slide_id, Some(document.slides[1].id));
+        assert!(!ui.thumbnails.items[0].selected);
+        assert!(ui.thumbnails.items[1].selected);
+
+        ui.apply_local_action(&UiAction::PreviousSlide).unwrap();
+        assert_eq!(ui.current_slide_id(), Some(document.slides[0].id));
+        assert!(ui.thumbnails.items[0].selected);
+        assert!(!ui.thumbnails.items[1].selected);
+    }
+
+    #[test]
     fn from_pptx_preserves_engine_error_verbatim() {
         let expected = EngineError::LimitExceeded {
             limit: 10,
