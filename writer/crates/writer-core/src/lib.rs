@@ -2686,7 +2686,10 @@ fn find_in_text(
     if needle.is_empty() {
         return Err(SearchError::EmptyQuery);
     }
-    for start in 0..=haystack.len().saturating_sub(needle.len()) {
+    let Some(last_start) = haystack.len().checked_sub(needle.len()) else {
+        return Ok(matches);
+    };
+    for start in 0..=last_start {
         let end = start + needle.len();
         if !ascii_equal(&haystack[start..end], &needle, query.case_sensitive) {
             continue;
