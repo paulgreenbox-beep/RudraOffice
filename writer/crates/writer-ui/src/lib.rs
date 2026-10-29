@@ -5,7 +5,7 @@ use std::fmt;
 
 use writer_api::core::{
     Alignment, BlockKind, Command, DocumentFormat, HeadingLevel, LineSpacing, ParagraphStylePatch,
-    Rgba8, SearchQuery, Selection, TextContainerId, TextStylePatch,
+    Rgba8, SearchQuery, Selection, TextContainerId, TextRange, TextStylePatch,
 };
 use writer_api::layout::{LayoutMode, LayoutSnapshot};
 use writer_api::{ApiError, ExportedDocument, WriterApi};
@@ -372,6 +372,27 @@ impl WriterViewModel {
 
     pub fn execute(&mut self, command: writer_api::core::Command) -> Result<(), UiError> {
         self.api.execute(command)?;
+        self.state.matches.clear();
+        self.state.status = "Document updated".to_string();
+        self.refresh();
+        Ok(())
+    }
+
+    /// Commits selection and replacement together, then refreshes the view cache.
+    pub fn replace_range_atomically(
+        &mut self,
+        selection: Selection,
+        range: TextRange,
+        text: String,
+    ) -> Result<(), UiError> {
+        let mut transaction = self.api.editor_mut().begin_transaction();
+        transaction
+            .set_selection(selection)
+            .map_err(ApiError::from)?;
+        transaction
+            .execute(Command::ReplaceRange { range, text })
+            .map_err(ApiError::from)?;
+        transaction.commit().map_err(ApiError::from)?;
         self.state.matches.clear();
         self.state.status = "Document updated".to_string();
         self.refresh();
@@ -1361,6 +1382,112 @@ pub struct RenderModel {
 mod tests {
     use super::*;
     use writer_api::core::{BlockId, Command, Cursor, Selection, TextContainerId, TextOffset};
+
+    #[test]
+    fn transactional_replace_invalidates_search_and_refreshes_cached_layout() {
+        let mut ui = WriterViewModel::new();
+        let original = "old 🙂 title";
+        ui.insert_text(original).unwrap();
+        ui.execute(Command::SetBlockKind {
+            block_id: BlockId::new(1),
+            kind: BlockKind::Heading(HeadingLevel::new(1).unwrap()),
+        })
+        .unwrap();
+        ui.api_mut().editor_mut().clear_history();
+        assert_eq!(ui.find("old").unwrap(), 1);
+        let before = ui.snapshot();
+        let selection_before = ui.api().selection();
+        let container = TextContainerId::Block(BlockId::new(1));
+        let range = writer_api::core::TextRange::new(
+            TextOffset::new(0),
+            TextOffset::new(original.chars().count()),
+        );
+
+        ui.replace_range_atomically(
+            Selection::new(
+                Cursor::new(container, range.start()),
+                Cursor::new(container, range.end()),
+            ),
+            range,
+            "new 🔥 title".to_owned(),
+        )
+        .unwrap();
+
+        assert_eq!(ui.snapshot().blocks[0].text(), Some("new 🔥 title"));
+        assert_eq!(ui.snapshot().revision.get(), before.revision.get() + 1);
+        assert!(ui.state().matches.is_empty());
+        assert_eq!(ui.state().status, "Document updated");
+        assert_eq!(ui.state().headings[0].text, "new 🔥 title");
+        assert_eq!(ui.state().selected_block, Some(1));
+        assert!(!ui.state().pages.is_empty());
+        assert_eq!(ui.state().layout, Some(ui.api().layout().unwrap()));
+        assert!(ui.undo().unwrap());
+        assert_eq!(ui.snapshot().blocks, before.blocks);
+        assert_eq!(ui.api().selection(), selection_before);
+        assert!(!ui.api().can_undo());
+        assert!(ui.redo().unwrap());
+        assert_eq!(ui.snapshot().blocks[0].text(), Some("new 🔥 title"));
+        assert!(!ui.api().can_redo());
+    }
+
+    #[test]
+    fn transactional_replace_command_error_preserves_search_cache_and_history() {
+        let mut ui = WriterViewModel::new();
+        ui.insert_text("keep🙂").unwrap();
+        ui.insert_text(" extra").unwrap();
+        assert!(ui.undo().unwrap());
+        assert_eq!(ui.find("keep").unwrap(), 1);
+        let before = ui.snapshot();
+        let state_before = ui.state().clone();
+        let selection_before = ui.api().selection();
+        let toolbar_before = ui.toolbar_state();
+        let container = TextContainerId::Block(BlockId::new(1));
+
+        let error = ui.replace_range_atomically(
+            Selection::collapsed(Cursor::new(container, TextOffset::new(0))),
+            writer_api::core::TextRange::new(TextOffset::new(0), TextOffset::new(99)),
+            "rejected".to_owned(),
+        );
+
+        let expected =
+            writer_api::core::EditError::Model(writer_api::core::ModelError::InvalidRange);
+        assert_eq!(error, Err(UiError::Api(ApiError::Edit(expected))));
+        assert_eq!(ui.snapshot(), before);
+        assert_eq!(ui.api().selection(), selection_before);
+        assert_eq!(ui.state(), &state_before);
+        assert_eq!(ui.toolbar_state(), toolbar_before);
+        assert!(ui.api().can_undo());
+        assert!(ui.api().can_redo());
+        assert!(ui.redo().unwrap());
+        assert_eq!(ui.snapshot().blocks[0].text(), Some("keep🙂 extra"));
+    }
+
+    #[test]
+    fn transactional_replace_selection_error_preserves_view_model_cache() {
+        let mut ui = WriterViewModel::new();
+        ui.insert_text("keep🙂").unwrap();
+        ui.api_mut().editor_mut().clear_history();
+        assert_eq!(ui.find("keep").unwrap(), 1);
+        let before = ui.snapshot();
+        let state_before = ui.state().clone();
+        let selection_before = ui.api().selection();
+        let container = TextContainerId::Block(BlockId::new(99));
+
+        assert!(
+            ui.replace_range_atomically(
+                Selection::collapsed(Cursor::new(container, TextOffset::new(0))),
+                writer_api::core::TextRange::new(TextOffset::new(0), TextOffset::new(0)),
+                "rejected".to_owned(),
+            )
+            .is_err()
+        );
+
+        assert_eq!(ui.snapshot(), before);
+        assert_eq!(ui.api().selection(), selection_before);
+        assert_eq!(ui.state(), &state_before);
+        assert!(!ui.api().can_undo());
+        assert!(!ui.api().can_redo());
+    }
 
     #[test]
     fn toolbar_normal_order_reflects_character_paragraph_and_styles() {

@@ -50,6 +50,16 @@ test('public Windows CI mapping preserves source units and native risk compositi
   assert.equal(plan.execution.updates_acceptance, false);
 });
 
+test('Writer transactional candidate maps exact sources/docs without waiving native and L4b', () => {
+  const plan = planVerification(original, readJson(path.join(root, 'verification/inputs/RDO-012-writer-transactional-inline-commit.json')));
+  assert.deepEqual(plan.unmapped_changes, {files: [], modules: []});
+  for (const id of ['writer-core-crate', 'writer-api-crate', 'writer-ui-crate']) assert.ok(plan.required.L1.some(t => t.id === id), id);
+  assert.ok(plan.required.L2.some(t => t.id === 'app-state'));
+  assert.ok(plan.required.L3.some(t => t.id === 'cycle2-functional-focused'));
+  for (const id of ['expanded-office-sessions', 'expanded-sheets-composition']) assert.ok(plan.required.L4b.some(t => t.id === id), id);
+  assert.equal(plan.execution.updates_acceptance, false);
+});
+
 test('isolated Writer API production source triggers history/session risks without caller tags', () => {
   const policy = known(0);
   const before = JSON.stringify(policy);

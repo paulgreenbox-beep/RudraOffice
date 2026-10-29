@@ -672,6 +672,15 @@ impl AppState {
         &mut self,
         id: RuntimeDocumentId,
     ) -> Result<(), DocumentRuntimeError> {
+        if self
+            .writer_inline_session
+            .as_ref()
+            .is_some_and(|session| session.document_id == id)
+        {
+            return Err(DocumentRuntimeError::InvalidState(
+                "Apply or cancel the open Writer draft before closing the document",
+            ));
+        }
         let pdf_backend_id = self
             .documents
             .require(id)?
@@ -927,6 +936,13 @@ impl AppState {
     }
 
     pub(crate) fn apply_ribbon_command(&mut self, command: RibbonCommand) -> Result<(), String> {
+        if matches!(
+            command,
+            RibbonCommand::InsertParagraph | RibbonCommand::InsertTable
+        ) && self.writer_inline_draft_is_active()
+        {
+            return Err("Сначала примените или отмените открытый черновик Writer.".to_owned());
+        }
         if matches!(
             command,
             RibbonCommand::InsertRows

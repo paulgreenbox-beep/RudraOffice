@@ -1,0 +1,22 @@
+{
+  "milestone_id": "RDO-012-writer-transactional-inline-commit",
+  "kind": "functional",
+  "changed_files": [
+    "workspace/crates/rudra-office-app/src/app_documents.rs",
+    "workspace/crates/rudra-office-app/src/app_events.rs",
+    "workspace/crates/rudra-office-app/src/app_tests.rs",
+    "workspace/crates/rudra-office-app/src/app_writer.rs",
+    "workspace/crates/rudra-office-app/src/main.rs",
+    "writer/crates/writer-core/src/lib.rs",
+    "writer/crates/writer-ui/src/lib.rs",
+    "writer/crates/writer-api/tests/transactional_selection.rs",
+    ".github/workflows/windows-ci.yml",
+    "verification/verification-policy.json",
+    "verification/tests/verification-policy.test.mjs",
+    "verification/inputs/RDO-012-writer-transactional-inline-commit.json",
+    "docs/WRITER_TRANSACTIONAL_INLINE_COMMIT.md"
+  ],
+  "feature_tags": ["backend", "history-integration", "sessions", "keyboard", "focus"],
+  "release_candidate": false,
+  "budget_override_reason": "Source-only transactional draft safety candidate. Actual core/API/UI/app owning tests are separate from native input. Preserve both required L4b compositions, native focus/history and fixture review gates; current trusted canary exposes read-only operations only. This budget explanation waives no coverage and grants no GUI PASS, accepted functional milestone or release promotion. Clipboard isolation uses synthetic observation, not native clipboard."
+}
