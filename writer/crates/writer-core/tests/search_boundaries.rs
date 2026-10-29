@@ -10,11 +10,12 @@ fn longer_unicode_query_does_not_panic_or_mutate_document() {
         .expect("insert synthetic Unicode text");
     let before = editor.snapshot();
 
-    assert!(editor.find("Ж🙂длиннее").expect("bounded search").is_empty());
-    assert!(editor
+    let matches = editor.find("Ж🙂длиннее").expect("bounded search");
+    assert!(matches.is_empty());
+    let matches = editor
         .find(SearchQuery::new("Ж🙂длиннее").ascii_case_insensitive(true))
-        .expect("bounded case-insensitive search")
-        .is_empty());
+        .expect("bounded case-insensitive search");
+    assert!(matches.is_empty());
     assert_eq!(
         editor
             .replace_all("Ж🙂длиннее", "replacement")
@@ -27,7 +28,8 @@ fn longer_unicode_query_does_not_panic_or_mutate_document() {
 #[test]
 fn longer_query_than_empty_document_is_an_empty_result() {
     let editor = Editor::new();
-    assert!(editor.find("query longer than empty").expect("bounded search").is_empty());
+    let matches = editor.find("query longer than empty").expect("bounded search");
+    assert!(matches.is_empty());
 }
 
 #[test]
