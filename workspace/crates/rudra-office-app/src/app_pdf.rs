@@ -1,5 +1,21 @@
 //! Application-owned module extracted without changing behavior.
 use super::*;
+use crate::pdf_render_identity::PdfRenderIdentity;
+
+// The adapter already permits a single encoded PNG up to 64 MiB. Keep the
+// visible set bounded independently of the unchanged 8 MiB LRU cache.
+const PDF_VISIBLE_PNG_MAX_BYTES: usize = 64 * 1024 * 1024;
+
+pub(crate) struct PdfRasterBatch {
+    session: RuntimeDocumentId,
+    backend: DocumentId,
+    current_page: PageId,
+    scale_bits: u32,
+    generation: u64,
+    visible: Vec<PageId>,
+    remaining: VecDeque<PageId>,
+    pub(crate) request: Option<PdfRenderRequest>,
+}
 
 #[derive(Debug)]
 pub struct RenderedPage {
@@ -915,33 +931,383 @@ impl AppState {
     }
 
     pub(crate) fn apply_pdf_effect(&mut self) {
-        if matches!(self.pdf_effect, PdfViewEffect::None) {
+        match std::mem::take(&mut self.pdf_effect) {
+            PdfViewEffect::None => return,
+            PdfViewEffect::RenderPage { page_index, scale } => {
+                if !scale.is_finite()
+                    || !(PDF_MIN_SCALE..=PDF_MAX_SCALE).contains(&scale)
+                    || !self.pdf_controller.state_mut().set_page(page_index)
+                {
+                    self.invalidate_pdf_raster();
+                    self.pdf_render_error("PDF: недопустимая страница или масштаб.".into());
+                } else {
+                    self.pdf_controller.state_mut().scale = scale;
+                    self.pdf_controller.state_mut().recompute_content_extent();
+                    self.schedule_pdf_raster();
+                }
+            }
+            PdfViewEffect::ShowEmpty => {
+                self.invalidate_pdf_raster();
+                self.pdf_controller.state_mut().clear();
+            }
+            PdfViewEffect::ShowError(error) => {
+                self.invalidate_pdf_raster();
+                self.pdf_render_error(error);
+            }
+            PdfViewEffect::ShowLoading => {
+                self.pdf_controller.state_mut().status = PdfViewStatus::Loading;
+                self.pdf_controller.state_mut().error = None;
+            }
+        }
+        self.sync_pdf_render_status();
+        self.sync_active_session_view();
+    }
+
+    pub(crate) fn invalidate_pdf_raster(&mut self) {
+        if let Some(batch) = self.pdf_raster_batch.take()
+            && let Some(request) = batch.request
+            && let Some(worker) = self.pdf_worker.as_ref()
+        {
+            worker.cancel(request.request_id());
+        }
+    }
+
+    /// Close invalidates only jobs owned by this backend, including inactive tabs.
+    pub(crate) fn cancel_pdf_document(&mut self, backend: DocumentId) {
+        if self
+            .pdf_raster_batch
+            .as_ref()
+            .is_some_and(|batch| batch.backend == backend)
+        {
+            self.invalidate_pdf_raster();
+        }
+        if let Some(worker) = self.pdf_worker.as_ref() {
+            worker.cancel_document(backend);
+        }
+    }
+
+    fn pdf_render_error(&mut self, error: String) {
+        let state = self.pdf_controller.state_mut();
+        state.status = PdfViewStatus::Error;
+        state.error = Some(error);
+        state.png.clear();
+        state.visible_pages.clear();
+    }
+
+    pub(crate) fn sync_pdf_render_status(&mut self) {
+        self.pdf_loading = self.pdf_controller.state().status == PdfViewStatus::Loading;
+        self.pdf_error = self.pdf_controller.state().error.clone();
+    }
+
+    /// Cache-only UI work. Existing resident PNGs survive LRU eviction.
+    pub(crate) fn refresh_pdf_cached_pages(&mut self) {
+        let state = self.pdf_controller.state();
+        let Some(backend) = state.document_id else {
+            return;
+        };
+        let scale = state.scale;
+        let current = state.current_page;
+        let mut ids = state.visible_page_ids();
+        ids.sort_by_key(|id| *id != current);
+        let mut resident = std::mem::take(&mut self.pdf_controller.state_mut().visible_pages);
+        let mut pages = Vec::with_capacity(ids.len());
+        let mut retained_bytes = 0usize;
+        for id in ids {
+            if let Some(png) = self.pdf_controller.cache.get(backend, id, scale) {
+                if png.len() <= PDF_VISIBLE_PNG_MAX_BYTES - retained_bytes {
+                    retained_bytes += png.len();
+                    pages.push(RenderedPage {
+                        page_index: id,
+                        scale,
+                        png: png.to_vec(),
+                    });
+                }
+            } else if let Some(position) = resident
+                .iter()
+                .position(|page| page.page_index == id && page.scale.to_bits() == scale.to_bits())
+            {
+                if resident[position].png.len() <= PDF_VISIBLE_PNG_MAX_BYTES - retained_bytes {
+                    retained_bytes += resident[position].png.len();
+                    pages.push(resident.remove(position));
+                }
+            }
+        }
+        let current_png = pages
+            .iter()
+            .find(|page| page.page_index == current)
+            .map(|page| page.png.clone());
+        let state = self.pdf_controller.state_mut();
+        state.visible_pages = pages;
+        if let Some(png) = current_png {
+            state.png = png;
+            state.status = PdfViewStatus::Ready;
+            state.error = None;
+        } else {
+            state.png.clear();
+        }
+    }
+
+    fn schedule_pdf_raster(&mut self) {
+        let Some(session) = self.active_document else {
+            self.invalidate_pdf_raster();
+            return;
+        };
+        let state = self.pdf_controller.state();
+        let Some(backend) = state.document_id else {
+            self.invalidate_pdf_raster();
+            return;
+        };
+        let registered_backend = self
+            .documents
+            .get(session)
+            .and_then(|session| session.backend().pdf_bindings())
+            .map(|(id, _, _)| id);
+        if registered_backend != Some(backend) {
+            self.invalidate_pdf_raster();
+            self.pdf_render_error("PDF: идентификатор документа изменился.".into());
             return;
         }
-        let effect = self.pdf_effect.clone();
-        self.pdf_effect = PdfViewEffect::None;
-        if matches!(effect, PdfViewEffect::RenderPage { .. }) {
-            self.pdf_loading = true;
-            self.pdf_error = None;
+        let current_page = state.current_page;
+        let scale_bits = state.scale.to_bits();
+        let visible = state.visible_page_ids();
+        if self.pdf_raster_batch.as_ref().is_some_and(|batch| {
+            batch.session == session
+                && batch.backend == backend
+                && batch.current_page == current_page
+                && batch.scale_bits == scale_bits
+                && batch.visible == visible
+        }) {
+            self.refresh_pdf_cached_pages();
+            // Another UI-owned source may have made this page available while
+            // its CPU job was pending. Do not let the late job or error replace
+            // the now-valid cached result, and continue the remaining batch.
+            let request = self
+                .pdf_raster_batch
+                .as_ref()
+                .and_then(|batch| batch.request);
+            if let Some(request) = request {
+                let resident = self
+                    .pdf_controller
+                    .state()
+                    .visible_pages
+                    .iter()
+                    .any(|page| {
+                        page.page_index == request.page_id()
+                            && page.scale.to_bits() == request.scale_bits()
+                    });
+                let cached = self
+                    .pdf_controller
+                    .cache
+                    .get(request.document_id(), request.page_id(), request.scale())
+                    .is_some();
+                if resident || cached {
+                    if let Some(worker) = self.pdf_worker.as_ref() {
+                        worker.cancel(request.request_id());
+                    }
+                    self.pdf_raster_batch
+                        .as_mut()
+                        .expect("batch retained")
+                        .request = None;
+                    self.submit_next_pdf_raster();
+                }
+            }
+            return;
         }
-        self.pdf_controller
-            .apply_effect(effect, &mut self.pdf_engine);
-        let controller_status = self.pdf_controller.state().status;
-        match controller_status {
-            PdfViewStatus::Empty | PdfViewStatus::Ready => {
-                self.pdf_loading = false;
-                self.pdf_error = None;
+        self.invalidate_pdf_raster();
+        let Some(generation) = self.pdf_raster_generation.checked_add(1) else {
+            self.pdf_render_error("PDF: исчерпан счётчик поколений.".into());
+            return;
+        };
+        self.pdf_raster_generation = generation;
+        let mut remaining = VecDeque::from(visible.clone());
+        remaining.retain(|page| *page != current_page);
+        remaining.push_front(current_page);
+        let state = self.pdf_controller.state_mut();
+        state.status = PdfViewStatus::Loading;
+        state.error = None;
+        self.pdf_raster_batch = Some(PdfRasterBatch {
+            session,
+            backend,
+            current_page,
+            scale_bits,
+            generation,
+            visible,
+            remaining,
+            request: None,
+        });
+        self.refresh_pdf_cached_pages();
+        self.submit_next_pdf_raster();
+    }
+
+    fn submit_next_pdf_raster(&mut self) {
+        loop {
+            let Some(batch) = self.pdf_raster_batch.as_mut() else {
+                return;
+            };
+            if batch.request.is_some() {
+                return;
             }
-            PdfViewStatus::Loading => {
-                self.pdf_loading = true;
-                self.pdf_error = None;
+            let Some(page) = batch.remaining.pop_front() else {
+                return;
+            };
+            let backend = batch.backend;
+            let scale = f32::from_bits(batch.scale_bits);
+            let current = batch.current_page;
+            if self
+                .pdf_controller
+                .cache
+                .get(backend, page, scale)
+                .is_some()
+                || self
+                    .pdf_controller
+                    .state()
+                    .visible_pages
+                    .iter()
+                    .any(|rendered| {
+                        rendered.page_index == page && rendered.scale.to_bits() == scale.to_bits()
+                    })
+            {
+                continue;
             }
-            PdfViewStatus::Error => {
-                self.pdf_loading = false;
-                self.pdf_error = self.pdf_controller.state().error.clone();
+            let result = (|| {
+                self.pdf_request_sequence = self
+                    .pdf_request_sequence
+                    .checked_add(1)
+                    .ok_or_else(|| "PDF: исчерпан счётчик запросов.".to_string())?;
+                let request =
+                    PdfRenderRequest::new(backend, page, scale, self.pdf_request_sequence)
+                        .map_err(|error| error.to_string())?;
+                let job = self
+                    .pdf_engine
+                    .prepare_render(request)
+                    .map_err(|error| error.to_string())?;
+                if self.pdf_worker.is_none() {
+                    self.pdf_worker = Some(
+                        PdfRenderWorker::new(SignalToUI::set_ui_signal)
+                            .map_err(|error| error.to_string())?,
+                    );
+                }
+                self.pdf_worker
+                    .as_ref()
+                    .expect("worker created")
+                    .submit_latest(job)
+                    .map_err(|error| error.to_string())?;
+                self.pdf_raster_batch
+                    .as_mut()
+                    .expect("batch retained")
+                    .request = Some(request);
+                Ok::<(), String>(())
+            })();
+            match result {
+                Ok(()) => return,
+                Err(error) if page == current => self.pdf_render_error(error),
+                Err(_) => {} // A failed neighbour must not reject the current page.
             }
         }
-        self.sync_active_session_view();
+    }
+
+    /// Called on the UI thread after wake. Never create textures on the worker.
+    pub(crate) fn poll_pdf_raster(&mut self) -> bool {
+        let Some(completion) = self
+            .pdf_worker
+            .as_ref()
+            .and_then(PdfRenderWorker::take_completion)
+        else {
+            return false;
+        };
+        self.adopt_pdf_raster_result(completion.request, completion.result)
+    }
+
+    pub(crate) fn adopt_pdf_raster_result(
+        &mut self,
+        request: PdfRenderRequest,
+        result: Result<Vec<u8>, pdf_core::PdfError>,
+    ) -> bool {
+        let Some(batch) = self.pdf_raster_batch.as_ref() else {
+            return false;
+        };
+        let Some(expected_request) = batch.request else {
+            return false;
+        };
+        let Some(session) = self.active_document else {
+            return false;
+        };
+        let Some((backend, _, _)) = self
+            .documents
+            .get(session)
+            .and_then(|session| session.backend().pdf_bindings())
+        else {
+            return false;
+        };
+        let state = self.pdf_controller.state();
+        let expected = PdfRenderIdentity {
+            session: batch.session,
+            backend: batch.backend,
+            page: expected_request.page_id(),
+            scale_bits: batch.scale_bits,
+            sequence: expected_request.request_id(),
+            generation: batch.generation,
+        };
+        let actual = PdfRenderIdentity {
+            session,
+            backend,
+            page: request.page_id(),
+            scale_bits: state.scale.to_bits(),
+            sequence: request.request_id(),
+            generation: self.pdf_raster_generation,
+        };
+        if !expected.matches(&actual)
+            || request.document_id() != backend
+            || request.scale_bits() != batch.scale_bits
+            || state.document_id != Some(batch.backend)
+            || state.current_page != batch.current_page
+            || !batch.visible.contains(&request.page_id())
+            || !state.visible_page_ids().contains(&request.page_id())
+        {
+            return false;
+        }
+        let current = batch.current_page;
+        self.pdf_raster_batch
+            .as_mut()
+            .expect("validated batch")
+            .request = None;
+        match result {
+            Ok(png) => {
+                if png.len() <= PDF_VIEW_CACHE_MAX_BYTES {
+                    self.pdf_controller.cache.insert(
+                        backend,
+                        request.page_id(),
+                        request.scale(),
+                        png.clone(),
+                    );
+                }
+                let pages = &mut self.pdf_controller.state_mut().visible_pages;
+                pages.retain(|page| page.page_index != request.page_id());
+                if request.page_id() == current {
+                    while pages.iter().map(|page| page.png.len()).sum::<usize>() + png.len()
+                        > PDF_VISIBLE_PNG_MAX_BYTES
+                        && !pages.is_empty()
+                    {
+                        pages.pop();
+                    }
+                }
+                if pages.iter().map(|page| page.png.len()).sum::<usize>() + png.len()
+                    <= PDF_VISIBLE_PNG_MAX_BYTES
+                {
+                    pages.push(RenderedPage {
+                        page_index: request.page_id(),
+                        scale: request.scale(),
+                        png,
+                    });
+                }
+                self.refresh_pdf_cached_pages();
+            }
+            Err(error) if request.page_id() == current => self.pdf_render_error(error.to_string()),
+            Err(_) => {}
+        }
+        self.submit_next_pdf_raster();
+        self.sync_pdf_render_status();
+        true
     }
 
     pub(crate) fn bind_pdf_document(
@@ -963,7 +1329,7 @@ impl AppState {
             page_ids,
             &geometries,
         );
-        self.apply_pdf_effect();
+        // Activation restores page, scale and scroll before submitting once.
     }
 
     pub(crate) fn clear_pdf_document(&mut self) {
@@ -992,6 +1358,12 @@ impl AppState {
     }
 
     pub(crate) fn pdf_go_to_page(&mut self, page_number: u32) {
+        if self.pdf_controller.state().status == PdfViewStatus::Error
+            && page_number == self.pdf_controller.state().current_page_number()
+        {
+            // A user retry is distinct from automatic redraws of a failed page.
+            self.invalidate_pdf_raster();
+        }
         let _ = self.go_to_page_active(page_number);
     }
 

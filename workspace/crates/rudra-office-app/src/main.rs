@@ -50,7 +50,9 @@ use makepad_widgets::makepad_draw::text::selection::Cursor as MakepadTextCursor;
 use makepad_widgets::makepad_platform::{CxOsOp, thread::SignalToUI};
 use makepad_widgets::*;
 use pdf_core::{DocumentId, DocumentInfo, PageGeometry, PageId, PdfEngine};
-use pdf_oxide_adapter::{PdfOpenArtifact, PdfOxideAdapter, PdfViewerSafetyHint};
+use pdf_oxide_adapter::{
+    PdfOpenArtifact, PdfOxideAdapter, PdfRenderRequest, PdfRenderWorker, PdfViewerSafetyHint,
+};
 use sheets_api::{
     ClipboardPayload, EntryParser, FormatPatch as SheetsFormatPatch, FormatPatchBounds,
     Rgba8 as SheetsRgba8, SpreadsheetApi,
@@ -118,7 +120,10 @@ mod sheets_grid_widget;
 #[cfg(windows)]
 use sheets_grid_widget::SheetsGridAccessibilitySnapshot;
 use sheets_grid_widget::{SheetsGridAction, SheetsGridCanvas};
+#[cfg(test)]
+mod pdf_async_tests;
 mod pdf_page_widget;
+mod pdf_render_identity;
 mod pdf_texture_identity;
 use pdf_page_widget::{PdfPageCanvas, PdfPageCanvasAction};
 mod slides_visual_widget;
@@ -1470,6 +1475,10 @@ struct AppState {
     pdf_controller: PdfController,
     pdf_effect: PdfViewEffect,
     pdf_loading: bool,
+    pdf_worker: Option<PdfRenderWorker>,
+    pdf_raster_batch: Option<app_pdf::PdfRasterBatch>,
+    pdf_request_sequence: u64,
+    pdf_raster_generation: u64,
     open_job: Option<DocumentOpenJob>,
     pending_open_path: Option<PathBuf>,
     pending_blank_creation: Option<(PathBuf, BlankDocumentFormat)>,
@@ -1495,6 +1504,9 @@ struct AppState {
 
 impl Drop for AppState {
     fn drop(&mut self) {
+        if let Some(worker) = self.pdf_worker.as_ref() {
+            worker.shutdown();
+        }
         if let Some((path, _)) = self.pending_blank_creation.take() {
             let _ = std::fs::remove_file(path);
         }

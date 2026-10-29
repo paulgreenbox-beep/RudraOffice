@@ -280,7 +280,6 @@ impl AppState {
                 if let Some((backend_id, page_count, page_ids)) = pdf_bindings {
                     self.bind_pdf_document(backend_id, page_count, &page_ids);
                     self.pdf_effect = self.pdf_controller.go_to_page_number(view.page_number);
-                    self.apply_pdf_effect();
                     restore_pdf_session_view(self.pdf_controller.state_mut(), view);
                     self.pdf_effect = self.pdf_controller.request_current_page();
                     self.apply_pdf_effect();
@@ -694,7 +693,9 @@ impl AppState {
             self.clear_slides_document();
         }
         if let Some(backend_id) = pdf_backend_id {
+            self.cancel_pdf_document(backend_id);
             self.pdf_controller.release_document(backend_id);
+            self.sync_pdf_render_status();
         } else if was_active {
             self.clear_pdf_document();
         }
