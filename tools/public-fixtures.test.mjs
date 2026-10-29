@@ -13,7 +13,7 @@ const ignore = fs.readFileSync(path.join(root, '.gitignore'), 'utf8').split(/\r?
 
 test('public corpus has unique bounded relative paths and explicit provenance', () => {
   assert.equal(manifest.license, 'MIT');
-  assert.equal(manifest.fixtures.length, 8);
+  assert.equal(manifest.fixtures.length, 9);
   assert.match(manifest.origin, /synthetic/);
   assert.equal(new Set(manifest.fixtures.map(f => f.path)).size, manifest.fixtures.length);
   for (const f of manifest.fixtures) {

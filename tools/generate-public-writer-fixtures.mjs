@@ -125,7 +125,13 @@ function tableXml(grid = false) {
   return `<w:tbl><w:tblPr><w:tblW w:w="7200" w:type="dxa"/></w:tblPr><w:tblGrid><w:gridCol w:w="3600"/><w:gridCol w:w="3600"/></w:tblGrid><w:tr>${cell('Тестовая ячейка')}${cell('42')}</w:tr></w:tbl>`;
 }
 
-function documentXml({ rich, grid = false }) {
+function documentXml({ rich, grid = false, adjacent = false }) {
+  if (adjacent) {
+    const left = `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${run('Ж', { bold: true })}${run('🙂', { italic: true })}</w:p>`;
+    const right = `<w:p><w:pPr><w:jc w:val="right"/></w:pPr>${run('Б\u0301', { underline: true })}${run('Я', { color: '0057B8' })}</w:p>`;
+    const page2 = `<w:p>${run('Учебная ')}${run('страница ', { underline: true })}${run('😀', { bold: true, color: '0057B8' })}</w:p>`;
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="${W}"><w:body>${left}${right}${pageBreakParagraph()}${page2}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr></w:body></w:document>`;
+  }
   const p1 = `<w:p>${run('Рассвет ', { bold: true, color: '0057B8' })}${run('🙂на орбите', { italic: true })}</w:p>`;
   const p2 = `<w:p>${run('Учебная ')}${run('страница ', { underline: true })}${run('😀', { bold: true, color: '0057B8' })}</w:p>`;
   const extras = rich ? `${tableXml(grid)}${imageParagraph()}` : '';
@@ -205,11 +211,11 @@ function part(name, content) {
   return { name, data: Buffer.isBuffer(content) ? content : Buffer.from(content, 'utf8') };
 }
 
-function makeDocx({ rich, grid = false }) {
+function makeDocx({ rich, grid = false, adjacent = false }) {
   const entries = [
     part('[Content_Types].xml', contentTypesXml({ rich })),
     part('_rels/.rels', rootRelationshipsXml()),
-    part('word/document.xml', documentXml({ rich, grid })),
+    part('word/document.xml', documentXml({ rich, grid, adjacent })),
     part('word/_rels/document.xml.rels', documentRelationshipsXml({ rich })),
     part('word/header1.xml', headerXml()),
     part('word/footer1.xml', footerXml()),
@@ -247,6 +253,7 @@ function main() {
     ['synthetic-basic.docx', makeDocx({ rich: false })],
     ['synthetic-rich.docx', makeDocx({ rich: true })],
     ['synthetic-grid.docx', makeDocx({ rich: true, grid: true })],
+    ['synthetic-editing-pages.docx', makeDocx({ rich: false, adjacent: true })],
   ];
 
   if (!check) mkdirSync(outputDir, { recursive: true });

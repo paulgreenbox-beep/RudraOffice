@@ -5098,6 +5098,291 @@ mod tests {
     }
 
     #[test]
+    fn backend_docx_named_underlines_survive_ir_conversion() {
+        use office_oxide::docx::write::{DocxWriter, Run};
+        use office_oxide::docx::{BlockElement, ParagraphContent, UnderlineType};
+
+        let cases = [
+            (None, None),
+            (Some(IrUnderlineStyle::Single), Some(UnderlineType::Single)),
+            (Some(IrUnderlineStyle::Double), Some(UnderlineType::Double)),
+            (Some(IrUnderlineStyle::Thick), Some(UnderlineType::Thick)),
+            (Some(IrUnderlineStyle::Dotted), Some(UnderlineType::Dotted)),
+            (Some(IrUnderlineStyle::Dash), Some(UnderlineType::Dash)),
+            (
+                Some(IrUnderlineStyle::DotDash),
+                Some(UnderlineType::DotDash),
+            ),
+            (
+                Some(IrUnderlineStyle::DotDotDash),
+                Some(UnderlineType::DotDotDash),
+            ),
+            (Some(IrUnderlineStyle::Wave), Some(UnderlineType::Wave)),
+            (Some(IrUnderlineStyle::Words), Some(UnderlineType::Words)),
+            (Some(IrUnderlineStyle::None), Some(UnderlineType::None)),
+        ];
+        for (expected_ir, expected_parsed) in cases {
+            let mut run = Run::new("Ж🙂");
+            run.underline_style = expected_ir.clone();
+            let mut writer = DocxWriter::new();
+            writer.add_rich_paragraph(&[run]);
+            let mut bytes = IoCursor::new(Vec::new());
+            writer.write_to(&mut bytes).unwrap();
+            let document = OfficeOxideDocument::from_reader(
+                IoCursor::new(bytes.into_inner()),
+                OfficeOxideFormat::Docx,
+            )
+            .unwrap();
+            assert_eq!(document.as_docx().unwrap().body.elements.len(), 1);
+            let BlockElement::Paragraph(paragraph) = &document.as_docx().unwrap().body.elements[0]
+            else {
+                panic!("parsed paragraph")
+            };
+            assert_eq!(paragraph.content.len(), 1);
+            let ParagraphContent::Run(run) = &paragraph.content[0] else {
+                panic!("parsed run")
+            };
+            assert_eq!(
+                run.properties.as_ref().and_then(|p| p.underline.as_ref()),
+                expected_parsed.as_ref(),
+                "serialized OOXML parse before conversion"
+            );
+            let ir = document.to_ir();
+            assert_eq!(ir.sections.len(), 1);
+            assert_eq!(ir.sections[0].elements.len(), 1);
+            let IrElement::Paragraph(paragraph) = &ir.sections[0].elements[0] else {
+                panic!("IR paragraph")
+            };
+            assert_eq!(paragraph.content.len(), 1);
+            let IrInlineContent::Text(span) = &paragraph.content[0] else {
+                panic!("IR span")
+            };
+            assert_eq!(span.text, "Ж🙂");
+            assert_eq!(span.underline, expected_ir, "{expected_parsed:?}");
+        }
+    }
+
+    #[test]
+    fn backend_docx_underline_survives_ir_conversion() {
+        use office_oxide::docx::write::{DocxWriter, Run};
+        use office_oxide::docx::{BlockElement, ParagraphContent, UnderlineType};
+
+        // Backend-only serialized reproducer: the Rudra importer is not called.
+        let mut off = Run::new("off");
+        off.underline_style = Some(IrUnderlineStyle::None);
+        let mut writer = DocxWriter::new();
+        writer.add_rich_paragraph(&[Run::new("plain"), Run::new("Б").underline(), off]);
+        let mut bytes = IoCursor::new(Vec::new());
+        writer
+            .write_to(&mut bytes)
+            .expect("serialize controlled DOCX");
+        let document = OfficeOxideDocument::from_reader(
+            IoCursor::new(bytes.into_inner()),
+            OfficeOxideFormat::Docx,
+        )
+        .expect("parse controlled DOCX with backend");
+        let BlockElement::Paragraph(paragraph) = &document.as_docx().unwrap().body.elements[0]
+        else {
+            panic!("parsed paragraph")
+        };
+        let runs: Vec<_> = paragraph
+            .content
+            .iter()
+            .filter_map(|item| match item {
+                ParagraphContent::Run(run) => Some(run),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(runs.len(), 3);
+        assert_eq!(
+            runs[1].properties.as_ref().unwrap().underline,
+            Some(UnderlineType::Single)
+        );
+        assert_eq!(
+            runs[2].properties.as_ref().unwrap().underline,
+            Some(UnderlineType::None)
+        );
+        let ir = document.to_ir();
+        let IrElement::Paragraph(paragraph) = &ir.sections[0].elements[0] else {
+            panic!("IR paragraph")
+        };
+        let spans: Vec<_> = paragraph
+            .content
+            .iter()
+            .filter_map(|item| match item {
+                IrInlineContent::Text(span) => Some(span),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(spans.len(), 3);
+        assert_eq!(spans[0].underline, None);
+        assert_eq!(spans[1].underline, Some(IrUnderlineStyle::Single));
+        assert_eq!(spans[2].underline, Some(IrUnderlineStyle::None));
+    }
+
+    #[test]
+    fn public_editing_pages_docx_imports_adjacent_paragraphs_and_page_break() {
+        let imported = DocxImporter
+            .import_with_layout(include_bytes!(
+                "../../../../fixtures/public/writer/synthetic-editing-pages.docx"
+            ))
+            .expect("import public editing-pages DOCX");
+        let blocks = &imported.snapshot.blocks;
+        assert_eq!(blocks.len(), 4);
+        let left = blocks[0].text_block().expect("first paragraph");
+        let right = blocks[1].text_block().expect("adjacent paragraph");
+        let page_break = blocks[2].text_block().expect("page-break block");
+        let page2 = blocks[3].text_block().expect("second-page paragraph");
+        assert_eq!(left.kind, BlockKind::Paragraph);
+        assert_eq!(right.kind, BlockKind::Paragraph);
+        assert_eq!(page_break.kind, BlockKind::PageBreak);
+        assert_eq!(page2.kind, BlockKind::Paragraph);
+        let ids = [left.id, right.id, page_break.id, page2.id];
+        for (index, id) in ids.iter().enumerate() {
+            for other in &ids[index + 1..] {
+                assert_ne!(
+                    id, other,
+                    "block IDs are distinct and read from the snapshot"
+                );
+            }
+        }
+        assert_eq!(left.text, "Ж🙂");
+        assert_eq!(right.text, "Б\u{301}Я");
+        assert_eq!(
+            left.text.chars().count(),
+            2,
+            "the end boundary uses scalar offsets"
+        );
+        assert_eq!(left.paragraph_style.alignment(), Alignment::Center);
+        assert_eq!(right.paragraph_style.alignment(), Alignment::Right);
+        assert_eq!(left.runs.len(), 2);
+        assert_eq!(left.runs[0].text, "Ж");
+        assert_eq!(left.runs[0].style, TextStyle::default().with_bold(true));
+        assert_eq!(left.runs[1].text, "🙂");
+        assert_eq!(left.runs[1].style, TextStyle::default().with_italic(true));
+        assert_eq!(right.runs.len(), 2);
+        assert_eq!(right.runs[0].text, "Б\u{301}");
+        assert_eq!(
+            right.runs[0].style,
+            TextStyle::default().with_underline(true)
+        );
+        assert_eq!(right.runs[1].text, "Я");
+        assert_eq!(
+            right.runs[1].style,
+            TextStyle::default().with_foreground(Some(Rgba8::rgb(0, 87, 184)))
+        );
+        assert_eq!(page_break.text, "");
+        assert!(page_break.runs.is_empty());
+        assert_eq!(page2.text, "Учебная страница 😀");
+        assert_eq!(page2.paragraph_style.alignment(), Alignment::Left);
+        assert_eq!(page2.runs.len(), 3);
+        assert_eq!(page2.runs[0].text, "Учебная ");
+        assert_eq!(page2.runs[0].style, TextStyle::default());
+        assert_eq!(page2.runs[1].text, "страница ");
+        assert_eq!(
+            page2.runs[1].style,
+            TextStyle::default().with_underline(true)
+        );
+        assert_eq!(page2.runs[2].text, "😀");
+        assert_eq!(
+            page2.runs[2].style,
+            TextStyle::default()
+                .with_bold(true)
+                .with_foreground(Some(Rgba8::rgb(0, 87, 184)))
+        );
+        assert_eq!(imported.projection.source.page_breaks, 1);
+        assert_eq!(imported.projection.projected.page_break_blocks, 1);
+    }
+
+    // Model-only contract for the imported public fixture. This does not send
+    // a keyboard event and is not evidence of a real GUI editing path.
+    #[test]
+    fn public_editing_pages_model_join_preserves_page_two_and_history() {
+        let imported = DocxImporter
+            .import(include_bytes!(
+                "../../../../fixtures/public/writer/synthetic-editing-pages.docx"
+            ))
+            .expect("import public editing-pages DOCX");
+        assert_eq!(imported.blocks.len(), 4);
+        let before_blocks = imported.blocks.clone();
+        let left = before_blocks[0].text_block().expect("left paragraph");
+        let right = before_blocks[1].text_block().expect("right paragraph");
+        assert_eq!(left.kind, BlockKind::Paragraph);
+        assert_eq!(right.kind, BlockKind::Paragraph);
+        assert_eq!(
+            before_blocks[2].text_block().unwrap().kind,
+            BlockKind::PageBreak
+        );
+        assert_eq!(
+            before_blocks[3].text_block().unwrap().kind,
+            BlockKind::Paragraph
+        );
+        let left_id = left.id;
+        let right_id = right.id;
+        let left_style = left.paragraph_style.clone();
+        let expected_runs = left
+            .runs
+            .iter()
+            .chain(&right.runs)
+            .cloned()
+            .collect::<Vec<_>>();
+        let boundary = Selection::collapsed(Cursor::new(
+            TextContainerId::Block(left_id),
+            TextOffset::new(left.text.chars().count()),
+        ));
+        assert_eq!(left.text.chars().count(), 2);
+        let mut editor = Editor::new();
+        editor
+            .replace_document(imported)
+            .expect("load imported model");
+        editor.clear_history();
+        editor
+            .set_selection(boundary)
+            .expect("place model selection");
+        let revision = editor.revision().get();
+        editor
+            .execute(Command::DeleteForward)
+            .expect("join adjacent paragraphs");
+        let merged = editor.snapshot();
+        assert_eq!(merged.revision.get(), revision + 1);
+        assert_eq!(merged.blocks.len(), 3);
+        let merged_left = merged.blocks[0].text_block().unwrap();
+        assert_eq!(merged_left.id, left_id);
+        assert_ne!(merged_left.id, right_id);
+        assert!(
+            merged
+                .blocks
+                .iter()
+                .all(|block| block.text_block().is_none_or(|text| text.id != right_id))
+        );
+        assert_eq!(merged_left.kind, BlockKind::Paragraph);
+        assert_eq!(merged_left.text, "Ж🙂Б\u{301}Я");
+        assert_eq!(merged_left.paragraph_style, left_style);
+        assert_eq!(merged_left.runs, expected_runs);
+        assert_eq!(
+            merged.blocks[1], before_blocks[2],
+            "page-break ID and content stay unchanged"
+        );
+        assert_eq!(
+            merged.blocks[2], before_blocks[3],
+            "page-two ID, runs and style stay unchanged"
+        );
+        assert_eq!(editor.selection(), boundary);
+        assert!(editor.can_undo());
+        assert!(!editor.can_redo());
+        assert!(editor.undo().unwrap());
+        assert_eq!(editor.revision().get(), revision + 2);
+        assert_eq!(editor.snapshot().blocks, before_blocks);
+        assert_eq!(editor.selection(), boundary);
+        assert!(editor.can_redo());
+        assert!(editor.redo().unwrap());
+        assert_eq!(editor.revision().get(), revision + 3);
+        assert_eq!(editor.snapshot().blocks, merged.blocks);
+        assert_eq!(editor.selection(), boundary);
+        assert!(!editor.can_redo());
+    }
+
+    #[test]
     fn projection_diagnostics_make_textual_fallbacks_explicit() {
         let document = DocumentIR {
             sections: vec![office_oxide::ir::Section {

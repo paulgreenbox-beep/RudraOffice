@@ -36,6 +36,7 @@ fixtures/private/
 !fixtures/public/writer/synthetic-basic.docx
 !fixtures/public/writer/synthetic-rich.docx
 !fixtures/public/writer/synthetic-grid.docx
+!fixtures/public/writer/synthetic-editing-pages.docx
 !fixtures/public/pdf/cid-unicode-space-control.pdf
 !fixtures/public/pdf/cid-unicode-space-tw.pdf
 !fixtures/public/pdf/cid-cyrillic.pdf

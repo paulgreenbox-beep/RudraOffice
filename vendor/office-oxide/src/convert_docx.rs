@@ -540,6 +540,25 @@ fn convert_run(
             crate::core::theme::ColorRef::Rgb(rgb) => Some(rgb.0),
             _ => None,
         });
+    // Preserve parsed underline and explicit removal in the IR. Unknown
+    // styles remain unrepresented rather than inventing a replacement style.
+    let underline = run
+        .properties
+        .as_ref()
+        .and_then(|rp| rp.underline.as_ref())
+        .and_then(|style| match style {
+            crate::docx::UnderlineType::Single => Some(UnderlineStyle::Single),
+            crate::docx::UnderlineType::Double => Some(UnderlineStyle::Double),
+            crate::docx::UnderlineType::Thick => Some(UnderlineStyle::Thick),
+            crate::docx::UnderlineType::Dotted => Some(UnderlineStyle::Dotted),
+            crate::docx::UnderlineType::Dash => Some(UnderlineStyle::Dash),
+            crate::docx::UnderlineType::DotDash => Some(UnderlineStyle::DotDash),
+            crate::docx::UnderlineType::DotDotDash => Some(UnderlineStyle::DotDotDash),
+            crate::docx::UnderlineType::Wave => Some(UnderlineStyle::Wave),
+            crate::docx::UnderlineType::Words => Some(UnderlineStyle::Words),
+            crate::docx::UnderlineType::None => Some(UnderlineStyle::None),
+            crate::docx::UnderlineType::Other(_) => None,
+        });
 
     for rc in &run.content {
         match rc {
@@ -548,6 +567,7 @@ fn convert_run(
                     text: text.clone(),
                     bold,
                     italic,
+                    underline: underline.clone(),
                     strikethrough: strike,
                     hyperlink: hyperlink_url.map(|s| s.to_string()),
                     font_size_half_pt,
