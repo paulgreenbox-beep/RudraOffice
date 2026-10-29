@@ -815,6 +815,9 @@ impl AppMain for App {
         }
         if matches!(event, Event::Draw(_) | Event::Signal) {
             self.poll_document_open(cx);
+            if self.state.poll_pdf_raster() {
+                self.refresh_ui(cx);
+            }
         }
         if self.sheets_grid_has_key_focus(cx) {
             // Windows sends native clipboard events BEFORE the corresponding
