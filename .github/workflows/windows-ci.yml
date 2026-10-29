@@ -75,7 +75,7 @@ jobs:
           git rev-parse HEAD
       - name: Pure source, policy and synthetic corpus tests
         working-directory: RudraOffice
-        run: node --test tools/public-dependency-verification.test.mjs verification/tests/verification-policy.test.mjs tools/public-fixtures.test.mjs
+        run: node --test tools/public-dependency-verification.test.mjs verification/tests/verification-policy.test.mjs tools/public-fixtures.test.mjs tools/ui-script-bindings.test.mjs
       - name: Isolated compiler, rustfmt and Clippy
         run: |
           rustup toolchain install 1.97.1 --profile minimal --component rustfmt --component clippy
