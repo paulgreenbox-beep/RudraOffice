@@ -1484,6 +1484,8 @@ struct AppState {
     /// prevents an in-progress draft in one tab from replacing another tab's
     /// input field during UI refresh.
     writer_text_drafts: BTreeMap<RuntimeDocumentId, WriterTextEditorDraft>,
+    writer_inline_session: Option<WriterInlineEditorSession>,
+    writer_inline_epoch: u64,
     writer_color_value: Option<&'static str>,
     sheets_color_value: Option<&'static str>,
     slides_color_value: Option<&'static str>,
@@ -1506,6 +1508,8 @@ impl Drop for AppState {
 struct WriterInlineEditorSession {
     document_id: RuntimeDocumentId,
     block_id: u64,
+    revision: writer_api::core::Revision,
+    epoch: u64,
 }
 
 type SheetsCellInputBinding = (RuntimeDocumentId, CellAddress, String);

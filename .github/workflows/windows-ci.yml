@@ -115,7 +115,7 @@ jobs:
         working-directory: RudraOffice/workspace
         run: |
           $groups = @(
-            @{manifest='../writer/Cargo.toml';packages=@('writer-api','writer-docx')},
+            @{manifest='../writer/Cargo.toml';packages=@('writer-core','writer-api','writer-docx','writer-ui')},
             @{manifest='../pdf/crates/pdf-oxide-adapter/Cargo.toml';packages=@('pdf-oxide-adapter')},
             @{manifest='../slides/Cargo.toml';packages=@('slides-pptx-adapter','slides-ui')},
             @{manifest='../sheets/Cargo.toml';packages=@('sheets-api','sheets-xlsx','sheets-ironcalc-adapter')}
@@ -134,7 +134,7 @@ jobs:
         run: |
           $groups = @(
             @{manifest='Cargo.toml';packages=@('rudra-office-app','rudra-office-launcher','office-ui-runtime')},
-            @{manifest='../writer/Cargo.toml';packages=@('writer-api','writer-docx')},
+            @{manifest='../writer/Cargo.toml';packages=@('writer-core','writer-api','writer-docx','writer-ui')},
             @{manifest='../pdf/crates/pdf-oxide-adapter/Cargo.toml';packages=@('pdf-oxide-adapter')},
             @{manifest='../slides/Cargo.toml';packages=@('slides-pptx-adapter','slides-ui')},
             @{manifest='../sheets/Cargo.toml';packages=@('sheets-api','sheets-xlsx','sheets-ironcalc-adapter')}
