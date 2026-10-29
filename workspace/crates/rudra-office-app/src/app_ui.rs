@@ -63,6 +63,8 @@ script_mod! {
     use mod.widgets.PdfPageCanvas
     use mod.widgets.SlidesVisualCanvas
     use mod.widgets.DocumentTabStrip
+    use mod.widgets.RudraDocumentTabBar
+    let BelowInput = #(makepad_widgets::drop_down::PopupMenuPosition::BelowInput)
 
     startup() do #(App::script_component(vm)) {
         ui: Root {
