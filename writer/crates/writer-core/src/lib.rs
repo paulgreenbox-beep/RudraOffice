@@ -1691,6 +1691,7 @@ impl Editor {
         if self.document.blocks == document.blocks && self.selection == selection {
             return Ok(());
         }
+        let next_revision = self.next_revision()?;
         let before = self.document.clone();
         let selection_before = self.selection;
         document.next_block = document.next_block.max(self.document.next_block);
@@ -1709,13 +1710,15 @@ impl Editor {
         self.redo.clear();
         self.document = document;
         self.selection = selection;
-        self.revision = Revision::new(
-            self.revision
-                .get()
-                .checked_add(1)
-                .ok_or(EditError::Model(ModelError::IdExhausted))?,
-        );
+        self.revision = next_revision;
         Ok(())
+    }
+    fn next_revision(&self) -> Result<Revision, EditError> {
+        self.revision
+            .get()
+            .checked_add(1)
+            .map(Revision::new)
+            .ok_or(EditError::Model(ModelError::IdExhausted))
     }
     pub fn execute(&mut self, command: Command) -> Result<(), EditError> {
         let mut document = self.document.clone();
@@ -1736,6 +1739,10 @@ impl Editor {
         }
     }
     pub fn undo(&mut self) -> Result<bool, EditError> {
+        if self.undo.is_empty() {
+            return Ok(false);
+        }
+        let next_revision = self.next_revision()?;
         let Some(entry) = self.undo.pop() else {
             return Ok(false);
         };
@@ -1749,15 +1756,14 @@ impl Editor {
             selection_before: entry.selection_before,
             selection_after: current_selection,
         });
-        self.revision = Revision::new(
-            self.revision
-                .get()
-                .checked_add(1)
-                .ok_or(EditError::Model(ModelError::IdExhausted))?,
-        );
+        self.revision = next_revision;
         Ok(true)
     }
     pub fn redo(&mut self) -> Result<bool, EditError> {
+        if self.redo.is_empty() {
+            return Ok(false);
+        }
+        let next_revision = self.next_revision()?;
         let Some(entry) = self.redo.pop() else {
             return Ok(false);
         };
@@ -1771,12 +1777,7 @@ impl Editor {
             selection_before: current_selection,
             selection_after: entry.selection_after,
         });
-        self.revision = Revision::new(
-            self.revision
-                .get()
-                .checked_add(1)
-                .ok_or(EditError::Model(ModelError::IdExhausted))?,
-        );
+        self.revision = next_revision;
         Ok(true)
     }
     pub fn can_undo(&self) -> bool {
@@ -1841,10 +1842,26 @@ pub struct Transaction<'a> {
     finished: bool,
 }
 impl Transaction<'_> {
+    /// Changes only the staged selection; rollback leaves the editor untouched.
+    pub fn set_selection(&mut self, selection: Selection) -> Result<(), EditError> {
+        self.document.validate_cursor(selection.anchor)?;
+        self.document.validate_cursor(selection.active)?;
+        if selection.anchor.container() != selection.active.container() {
+            return Err(EditError::InvalidSelection);
+        }
+        self.selection = selection;
+        Ok(())
+    }
+
+    /// A rejected command leaves the previously staged state available for retry.
     pub fn execute(&mut self, command: Command) -> Result<(), EditError> {
-        apply_command(&mut self.document, &mut self.selection, command)?;
-        self.document.validate_cursor(self.selection.anchor)?;
-        self.document.validate_cursor(self.selection.active)?;
+        let mut document = self.document.clone();
+        let mut selection = self.selection;
+        apply_command(&mut document, &mut selection, command)?;
+        document.validate_cursor(selection.anchor)?;
+        document.validate_cursor(selection.active)?;
+        self.document = document;
+        self.selection = selection;
         Ok(())
     }
     pub fn selection(&self) -> Selection {
@@ -2742,6 +2759,236 @@ fn paste(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn transactional_editor_state(
+        editor: &Editor,
+    ) -> (
+        Document,
+        Selection,
+        Revision,
+        Vec<HistoryEntry>,
+        Vec<HistoryEntry>,
+    ) {
+        (
+            editor.document.clone(),
+            editor.selection,
+            editor.revision,
+            editor.undo.clone(),
+            editor.redo.clone(),
+        )
+    }
+
+    fn transactional_editor_with_redo() -> Editor {
+        let mut editor = Editor::new();
+        editor
+            .execute(Command::InsertText {
+                text: "A🙂B".to_owned(),
+            })
+            .unwrap();
+        editor
+            .execute(Command::InsertText {
+                text: " second".to_owned(),
+            })
+            .unwrap();
+        assert!(editor.undo().unwrap());
+        assert!(editor.can_undo());
+        assert!(editor.can_redo());
+        editor.revision = Revision::new(u64::MAX);
+        editor
+    }
+
+    #[test]
+    fn transactional_revision_exhaustion_preserves_execute_state_and_history() {
+        let mut editor = transactional_editor_with_redo();
+        let before = transactional_editor_state(&editor);
+
+        assert_eq!(
+            editor.execute(Command::InsertText {
+                text: " rejected".to_owned(),
+            }),
+            Err(EditError::Model(ModelError::IdExhausted))
+        );
+
+        assert_eq!(transactional_editor_state(&editor), before);
+    }
+
+    #[test]
+    fn transactional_revision_exhaustion_preserves_transaction_commit_state_and_history() {
+        let mut editor = transactional_editor_with_redo();
+        let before = transactional_editor_state(&editor);
+        let mut transaction = editor.begin_transaction();
+        transaction
+            .execute(Command::InsertText {
+                text: " rejected".to_owned(),
+            })
+            .unwrap();
+
+        assert_eq!(
+            transaction.commit(),
+            Err(EditError::Model(ModelError::IdExhausted))
+        );
+
+        assert_eq!(transactional_editor_state(&editor), before);
+    }
+
+    #[test]
+    fn transactional_revision_exhaustion_preserves_undo_state_and_history() {
+        let mut editor = transactional_editor_with_redo();
+        let before = transactional_editor_state(&editor);
+
+        assert_eq!(
+            editor.undo(),
+            Err(EditError::Model(ModelError::IdExhausted))
+        );
+
+        assert_eq!(transactional_editor_state(&editor), before);
+    }
+
+    #[test]
+    fn transactional_revision_exhaustion_preserves_redo_state_and_history() {
+        let mut editor = transactional_editor_with_redo();
+        let before = transactional_editor_state(&editor);
+
+        assert_eq!(
+            editor.redo(),
+            Err(EditError::Model(ModelError::IdExhausted))
+        );
+
+        assert_eq!(transactional_editor_state(&editor), before);
+    }
+
+    #[test]
+    fn transactional_command_error_preserves_staged_document_and_allows_retry() {
+        let mut editor = Editor::new();
+        editor
+            .execute(Command::InsertText {
+                text: "A🙂B".to_owned(),
+            })
+            .unwrap();
+        editor.clear_history();
+        editor.document.next_block = u64::MAX;
+        let before = transactional_editor_state(&editor);
+        let mut transaction = editor.begin_transaction();
+        let staged_before = transaction.document.clone();
+        let selection_before = transaction.selection();
+
+        assert_eq!(
+            transaction.execute(Command::SplitBlock),
+            Err(EditError::Model(ModelError::IdExhausted))
+        );
+        assert_eq!(transaction.document, staged_before);
+        assert_eq!(transaction.selection(), selection_before);
+
+        transaction
+            .execute(Command::ReplaceRange {
+                range: TextRange::new(TextOffset::new(1), TextOffset::new(2)),
+                text: "🔥".to_owned(),
+            })
+            .unwrap();
+        transaction.commit().unwrap();
+        assert_eq!(editor.snapshot().blocks[0].text(), Some("A🔥B"));
+        assert_eq!(editor.revision().get(), before.2.get() + 1);
+        assert_eq!(editor.undo.len(), 1);
+        assert!(!editor.can_redo());
+        assert!(editor.undo().unwrap());
+        assert_eq!(editor.document, before.0);
+        assert_eq!(editor.selection(), before.1);
+        assert!(!editor.can_undo());
+        assert!(editor.redo().unwrap());
+        assert_eq!(editor.snapshot().blocks[0].text(), Some("A🔥B"));
+        assert!(!editor.can_redo());
+    }
+
+    #[test]
+    fn transactional_revision_exhaustion_keeps_no_ops_successful() {
+        let mut editor = Editor::new();
+        editor.revision = Revision::new(u64::MAX);
+        let before = transactional_editor_state(&editor);
+
+        assert!(!editor.undo().unwrap());
+        assert!(!editor.redo().unwrap());
+        editor
+            .execute(Command::InsertText {
+                text: String::new(),
+            })
+            .unwrap();
+        editor.begin_transaction().commit().unwrap();
+
+        assert_eq!(transactional_editor_state(&editor), before);
+    }
+
+    #[test]
+    fn transactional_staged_selection_rolls_back_and_rejects_invalid_cursors() {
+        let mut editor = Editor::new();
+        editor
+            .execute(Command::InsertText {
+                text: "A🙂B".to_owned(),
+            })
+            .unwrap();
+        editor.clear_history();
+        let before = transactional_editor_state(&editor);
+        let container = TextContainerId::Block(BlockId::new(1));
+        let selected = Selection::new(
+            Cursor::new(container, TextOffset::new(1)),
+            Cursor::new(container, TextOffset::new(2)),
+        );
+        let mut transaction = editor.begin_transaction();
+        transaction.set_selection(selected).unwrap();
+        assert_eq!(transaction.selection(), selected);
+        assert_eq!(transactional_editor_state(transaction.editor), before);
+        assert!(
+            transaction
+                .set_selection(Selection::collapsed(Cursor::new(
+                    container,
+                    TextOffset::new(4),
+                )))
+                .is_err()
+        );
+        assert_eq!(transaction.selection(), selected);
+        transaction.rollback();
+        assert_eq!(transactional_editor_state(&editor), before);
+    }
+
+    #[test]
+    fn transactional_selected_unicode_replacement_is_one_undo_step() {
+        let mut editor = Editor::new();
+        editor
+            .execute(Command::InsertText {
+                text: "A🙂B".to_owned(),
+            })
+            .unwrap();
+        editor.clear_history();
+        let before = transactional_editor_state(&editor);
+        let container = TextContainerId::Block(BlockId::new(1));
+        let mut transaction = editor.begin_transaction();
+        transaction
+            .set_selection(Selection::new(
+                Cursor::new(container, TextOffset::new(1)),
+                Cursor::new(container, TextOffset::new(2)),
+            ))
+            .unwrap();
+        transaction
+            .execute(Command::ReplaceRange {
+                range: TextRange::new(TextOffset::new(1), TextOffset::new(2)),
+                text: "🔥".to_owned(),
+            })
+            .unwrap();
+        transaction.commit().unwrap();
+        assert_eq!(editor.snapshot().blocks[0].text(), Some("A🔥B"));
+        assert_eq!(editor.revision().get(), before.2.get() + 1);
+        assert_eq!(editor.undo.len(), 1);
+        assert!(editor.undo().unwrap());
+        assert_eq!(editor.document, before.0);
+        assert_eq!(editor.selection(), before.1);
+        assert!(!editor.can_undo());
+        assert!(editor.redo().unwrap());
+        assert_eq!(editor.snapshot().blocks[0].text(), Some("A🔥B"));
+        assert_eq!(
+            editor.selection(),
+            Selection::collapsed(Cursor::new(container, TextOffset::new(2)))
+        );
+        assert!(!editor.can_redo());
+    }
 
     #[test]
     fn clear_history_discards_undo_and_redo_without_changing_editor_state() {
