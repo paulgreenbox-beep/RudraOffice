@@ -5098,6 +5098,129 @@ mod tests {
     }
 
     #[test]
+    fn backend_docx_named_underlines_survive_ir_conversion() {
+        use office_oxide::docx::write::{DocxWriter, Run};
+        use office_oxide::docx::{BlockElement, ParagraphContent, UnderlineType};
+
+        let cases = [
+            (None, None),
+            (Some(IrUnderlineStyle::Single), Some(UnderlineType::Single)),
+            (Some(IrUnderlineStyle::Double), Some(UnderlineType::Double)),
+            (Some(IrUnderlineStyle::Thick), Some(UnderlineType::Thick)),
+            (Some(IrUnderlineStyle::Dotted), Some(UnderlineType::Dotted)),
+            (Some(IrUnderlineStyle::Dash), Some(UnderlineType::Dash)),
+            (
+                Some(IrUnderlineStyle::DotDash),
+                Some(UnderlineType::DotDash),
+            ),
+            (
+                Some(IrUnderlineStyle::DotDotDash),
+                Some(UnderlineType::DotDotDash),
+            ),
+            (Some(IrUnderlineStyle::Wave), Some(UnderlineType::Wave)),
+            (Some(IrUnderlineStyle::Words), Some(UnderlineType::Words)),
+            (Some(IrUnderlineStyle::None), Some(UnderlineType::None)),
+        ];
+        for (expected_ir, expected_parsed) in cases {
+            let mut run = Run::new("Ж🙂");
+            run.underline_style = expected_ir.clone();
+            let mut writer = DocxWriter::new();
+            writer.add_rich_paragraph(&[run]);
+            let mut bytes = IoCursor::new(Vec::new());
+            writer.write_to(&mut bytes).unwrap();
+            let document = OfficeOxideDocument::from_reader(
+                IoCursor::new(bytes.into_inner()),
+                OfficeOxideFormat::Docx,
+            )
+            .unwrap();
+            assert_eq!(document.as_docx().unwrap().body.elements.len(), 1);
+            let BlockElement::Paragraph(paragraph) = &document.as_docx().unwrap().body.elements[0]
+            else {
+                panic!("parsed paragraph")
+            };
+            assert_eq!(paragraph.content.len(), 1);
+            let ParagraphContent::Run(run) = &paragraph.content[0] else {
+                panic!("parsed run")
+            };
+            assert_eq!(
+                run.properties.as_ref().and_then(|p| p.underline.as_ref()),
+                expected_parsed.as_ref(),
+                "serialized OOXML parse before conversion"
+            );
+            let ir = document.to_ir();
+            assert_eq!(ir.sections.len(), 1);
+            assert_eq!(ir.sections[0].elements.len(), 1);
+            let IrElement::Paragraph(paragraph) = &ir.sections[0].elements[0] else {
+                panic!("IR paragraph")
+            };
+            assert_eq!(paragraph.content.len(), 1);
+            let IrInlineContent::Text(span) = &paragraph.content[0] else {
+                panic!("IR span")
+            };
+            assert_eq!(span.text, "Ж🙂");
+            assert_eq!(span.underline, expected_ir, "{expected_parsed:?}");
+        }
+    }
+
+    #[test]
+    fn backend_docx_underline_survives_ir_conversion() {
+        use office_oxide::docx::write::{DocxWriter, Run};
+        use office_oxide::docx::{BlockElement, ParagraphContent, UnderlineType};
+
+        // Backend-only serialized reproducer: the Rudra importer is not called.
+        let mut off = Run::new("off");
+        off.underline_style = Some(IrUnderlineStyle::None);
+        let mut writer = DocxWriter::new();
+        writer.add_rich_paragraph(&[Run::new("plain"), Run::new("Б").underline(), off]);
+        let mut bytes = IoCursor::new(Vec::new());
+        writer
+            .write_to(&mut bytes)
+            .expect("serialize controlled DOCX");
+        let document = OfficeOxideDocument::from_reader(
+            IoCursor::new(bytes.into_inner()),
+            OfficeOxideFormat::Docx,
+        )
+        .expect("parse controlled DOCX with backend");
+        let BlockElement::Paragraph(paragraph) = &document.as_docx().unwrap().body.elements[0]
+        else {
+            panic!("parsed paragraph")
+        };
+        let runs: Vec<_> = paragraph
+            .content
+            .iter()
+            .filter_map(|item| match item {
+                ParagraphContent::Run(run) => Some(run),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(runs.len(), 3);
+        assert_eq!(
+            runs[1].properties.as_ref().unwrap().underline,
+            Some(UnderlineType::Single)
+        );
+        assert_eq!(
+            runs[2].properties.as_ref().unwrap().underline,
+            Some(UnderlineType::None)
+        );
+        let ir = document.to_ir();
+        let IrElement::Paragraph(paragraph) = &ir.sections[0].elements[0] else {
+            panic!("IR paragraph")
+        };
+        let spans: Vec<_> = paragraph
+            .content
+            .iter()
+            .filter_map(|item| match item {
+                IrInlineContent::Text(span) => Some(span),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(spans.len(), 3);
+        assert_eq!(spans[0].underline, None);
+        assert_eq!(spans[1].underline, Some(IrUnderlineStyle::Single));
+        assert_eq!(spans[2].underline, Some(IrUnderlineStyle::None));
+    }
+
+    #[test]
     fn public_editing_pages_docx_imports_adjacent_paragraphs_and_page_break() {
         let imported = DocxImporter
             .import_with_layout(include_bytes!(
