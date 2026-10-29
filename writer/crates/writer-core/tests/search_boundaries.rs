@@ -28,7 +28,9 @@ fn longer_unicode_query_does_not_panic_or_mutate_document() {
 #[test]
 fn longer_query_than_empty_document_is_an_empty_result() {
     let editor = Editor::new();
-    let matches = editor.find("query longer than empty").expect("bounded search");
+    let matches = editor
+        .find("query longer than empty")
+        .expect("bounded search");
     assert!(matches.is_empty());
 }
 
