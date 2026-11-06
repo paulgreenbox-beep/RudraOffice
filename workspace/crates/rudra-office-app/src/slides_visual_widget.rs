@@ -410,8 +410,6 @@ fn zoomed_fit_viewport(size: Size, width: f32, height: f32, zoom: f32) -> Viewpo
 struct CachedTexture {
     key: u64,
     texture: Texture,
-    width: usize,
-    height: usize,
     downsampled: bool,
 }
 
@@ -1026,23 +1024,16 @@ impl SlidesVisualCanvas {
             return ImageDrawOutcome::Placeholder;
         }
         let key = image_key(format, bytes);
-        let (texture, width, height, downsampled) = if let Some(cached) =
+        let (texture, downsampled) = if let Some(cached) =
             self.textures.iter().find(|item| item.key == key)
         {
-            (
-                cached.texture.clone(),
-                cached.width,
-                cached.height,
-                cached.downsampled,
-            )
+            (cached.texture.clone(), cached.downsampled)
         } else {
             let Some(image) = decode_slide_image(format, bytes) else {
                 self.draw_placeholder(cx, Self::local_rect(origin, rect));
                 return ImageDrawOutcome::Placeholder;
             };
             let (image, downsampled) = downsample_image_to_pixel_budget(image, MAX_TEXTURE_PIXELS);
-            let width = image.width;
-            let height = image.height;
             let texture = image.into_new_texture(cx);
             if self.textures.len() >= MAX_TEXTURES {
                 self.textures.remove(0);
@@ -1050,15 +1041,15 @@ impl SlidesVisualCanvas {
             self.textures.push(CachedTexture {
                 key,
                 texture: texture.clone(),
-                width,
-                height,
                 downsampled,
             });
-            (texture, width, height, downsampled)
+            (texture, downsampled)
         };
         self.draw_image.draw_vars.set_texture(0, &texture);
-        self.draw_image.image_dim_w = width as f32;
-        self.draw_image.image_dim_h = height as f32;
+        // The render plan owns the displayed size. Nonzero image dimensions
+        // select DrawImage's rotated mapping in quad coordinates, not texels.
+        self.draw_image.image_dim_w = 0.0;
+        self.draw_image.image_dim_h = 0.0;
         self.draw_image.draw_abs(cx, Self::local_rect(origin, rect));
         if downsampled {
             ImageDrawOutcome::Downsampled
