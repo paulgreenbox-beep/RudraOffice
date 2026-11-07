@@ -1,0 +1,27 @@
+{
+  "milestone_id": "RUDRA-WRITER-SOURCE-RECOVERY-20261107",
+  "changed_files": [
+    "workspace/crates/rudra-office-app/src/app_writer.rs",
+    "workspace/crates/rudra-office-app/src/app_events.rs",
+    "workspace/crates/rudra-office-app/src/app_shell.rs",
+    "workspace/crates/rudra-office-app/src/app_tests.rs",
+    "workspace/crates/rudra-office-app/src/writer_page_view.rs",
+    "verification/verification-policy.json"
+  ],
+  "changed_modules": [
+    "application-modules",
+    "writer-page-projection",
+    "verification-infrastructure"
+  ],
+  "feature_tags": [
+    "keyboard",
+    "focus",
+    "sessions",
+    "history-integration",
+    "pointer",
+    "rendering"
+  ],
+  "risk_override": [],
+  "kind": "functional",
+  "release_candidate": false
+}

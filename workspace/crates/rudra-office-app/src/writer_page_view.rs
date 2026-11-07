@@ -563,6 +563,7 @@ fn text_style(runs: &[InlineRun], kind: Option<&BlockKind>) -> WriterTextStyle {
     let value = runs
         .iter()
         .find(|run| !run.text.is_empty())
+        .or(runs.first())
         .map(|run| &run.style)
         .unwrap_or(&fallback);
     writer_style(value, kind)
@@ -604,7 +605,7 @@ fn project_runs(
             break;
         }
     }
-    if result.is_empty() && !fragment.is_empty() {
+    if result.is_empty() {
         result.push(WriterTextRun {
             text: fragment.to_owned(),
             style: text_style(runs, Some(kind)),
@@ -2122,6 +2123,86 @@ mod tests {
             .abs()
                 < 0.01
         );
+    }
+
+    #[test]
+    fn remediation_empty_run_projection_preserves_font_without_inserting_text() {
+        for (family, size) in [("Arial", 18), ("Times New Roman", 36), ("Courier New", 48)] {
+            let style = TextStyle::new(size)
+                .unwrap()
+                .with_font_family(Some(family.to_owned()))
+                .with_bold(true)
+                .with_italic(true);
+            let source = [InlineRun::new("", style.clone())];
+            let runs = project_runs(&source, 0, "", &BlockKind::Paragraph);
+            assert_eq!(runs.len(), 1);
+            assert_eq!(runs[0].text, "");
+            assert_eq!(
+                runs[0].style,
+                writer_style(&style, Some(&BlockKind::Paragraph))
+            );
+            assert_eq!(source[0].text, "", "source text must remain empty");
+        }
+        let runs = project_runs(&[], 0, "", &BlockKind::Paragraph);
+        assert_eq!(runs.len(), 1);
+        assert_eq!(runs[0].text, "");
+        assert_eq!(runs[0].style, WriterTextStyle::default());
+    }
+
+    #[test]
+    fn remediation_empty_paragraph_projection_is_logical_at_each_zoom() {
+        use writer_api::core::{BlockId, ParagraphStyle, Revision, TextBlockSnapshot};
+        let style = TextStyle::new(36)
+            .unwrap()
+            .with_font_family(Some("Arial".to_owned()));
+        let api = WriterApi::from_snapshot(DocumentSnapshot {
+            revision: Revision::new(0),
+            blocks: vec![BlockSnapshot::Text(TextBlockSnapshot {
+                id: BlockId::new(41),
+                kind: BlockKind::Paragraph,
+                paragraph_style: ParagraphStyle::default(),
+                text: String::new(),
+                runs: vec![InlineRun::new("", style.clone())],
+            })],
+        })
+        .unwrap();
+        let document = api.document();
+        let layout = api.layout().unwrap();
+        let mut logical_paragraph = None;
+        for zoom in [50, 100, 125, 200] {
+            let frame = build_writer_page_frame(
+                &document,
+                &layout,
+                api.layout_settings(),
+                api.docx_layout(),
+                zoom,
+                0.0,
+                0.0,
+            );
+            let paragraph = frame.pages[0]
+                .blocks
+                .iter()
+                .find_map(|block| match block {
+                    WriterVisualBlock::Paragraph(p) => Some(p),
+                    _ => None,
+                })
+                .unwrap();
+            assert_eq!(paragraph.block_id, 41);
+            assert_eq!(paragraph.runs.len(), 1);
+            assert_eq!(paragraph.runs[0].text, "");
+            assert_eq!(
+                paragraph.runs[0].style,
+                writer_style(&style, Some(&BlockKind::Paragraph))
+            );
+            if let Some(previous) = &logical_paragraph {
+                assert_eq!(
+                    paragraph, previous,
+                    "zoom must not be applied to logical runs"
+                );
+            }
+            logical_paragraph = Some(paragraph.clone());
+        }
+        assert_eq!(api.document(), document);
     }
 
     #[test]

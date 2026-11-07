@@ -3,6 +3,105 @@ use slides_api::{PresentationId, Slide, SlideId};
 
 const PNG_SIGNATURE: [u8; 8] = [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A];
 
+#[test]
+fn remediation_file_drop_accepts_one_external_supported_absolute_file_only() {
+    let path = std::env::temp_dir().join("Контроль.DOCX");
+    let item = DragItem::FilePath {
+        path: path.to_string_lossy().into_owned(),
+        internal_id: None,
+    };
+    assert_eq!(
+        crate::app_shell::single_dropped_document(std::slice::from_ref(&item)),
+        Some(path)
+    );
+    assert!(crate::app_shell::single_dropped_document(&[]).is_none());
+    assert!(crate::app_shell::single_dropped_document(&[item.clone(), item]).is_none());
+    for path in ["relative.docx", "https://example.test/file.docx"] {
+        assert!(
+            crate::app_shell::single_dropped_document(&[DragItem::FilePath {
+                path: path.into(),
+                internal_id: None,
+            }])
+            .is_none()
+        );
+    }
+    assert!(
+        crate::app_shell::single_dropped_document(&[DragItem::String {
+            value: "file:///not-a-file-drop.docx".into(),
+            internal_id: None,
+        }])
+        .is_none()
+    );
+    let unsupported = std::env::temp_dir().join("not-a-document.exe");
+    assert!(
+        crate::app_shell::single_dropped_document(&[DragItem::FilePath {
+            path: unsupported.to_string_lossy().into_owned(),
+            internal_id: None,
+        }])
+        .is_none()
+    );
+}
+
+#[test]
+fn remediation_ctrl_y_maps_only_focused_inline_draft_redo() {
+    let original = KeyEvent {
+        key_code: KeyCode::KeyY,
+        modifiers: KeyModifiers {
+            control: true,
+            ..Default::default()
+        },
+        time: 12.5,
+        is_repeat: true,
+    };
+    let Event::KeyDown(mapped) =
+        crate::app_writer::writer_inline_redo_key_event(&Event::KeyDown(original), true)
+            .expect("focused Writer inline Ctrl+Y must map to TextInput Redo")
+    else {
+        panic!("expected key down");
+    };
+    assert_eq!(mapped.key_code, KeyCode::KeyZ);
+    assert!(mapped.modifiers.control && mapped.modifiers.shift);
+    assert!(!mapped.modifiers.alt && !mapped.modifiers.logo);
+    assert_eq!(mapped.time, original.time);
+    assert_eq!(mapped.is_repeat, original.is_repeat);
+    assert!(
+        crate::app_writer::writer_inline_redo_key_event(&Event::KeyDown(original), false,)
+            .is_none(),
+        "another field/document history must not be intercepted"
+    );
+    for key in [
+        KeyEvent {
+            key_code: KeyCode::KeyZ,
+            ..original
+        },
+        KeyEvent {
+            modifiers: KeyModifiers {
+                alt: true,
+                ..original.modifiers
+            },
+            ..original
+        },
+        KeyEvent {
+            modifiers: KeyModifiers {
+                shift: true,
+                ..original.modifiers
+            },
+            ..original
+        },
+        KeyEvent {
+            modifiers: KeyModifiers::default(),
+            ..original
+        },
+    ] {
+        assert!(
+            crate::app_writer::writer_inline_redo_key_event(&Event::KeyDown(key), true,).is_none()
+        );
+    }
+    assert!(
+        crate::app_writer::writer_inline_redo_key_event(&Event::KeyUp(original), true,).is_none()
+    );
+}
+
 fn controlled_writer_fixture_path() -> PathBuf {
     let relative = if cfg!(feature = "private-fixtures") {
         "../../../fixtures/release-acceptance/docx/writer-layout-a4-multipage.docx"
@@ -10,6 +109,352 @@ fn controlled_writer_fixture_path() -> PathBuf {
         "../../../fixtures/public/writer/synthetic-grid.docx"
     };
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(relative)
+}
+
+fn remediation_app(state: AppState) -> App {
+    App {
+        ui: WidgetRef::default(),
+        state,
+        writer_inline_editor: None,
+        writer_inline_editor_pending_focus: false,
+        sheets_cell_input_binding: None,
+        native_paste_hook: Default::default(),
+        launcher_startup_request: None,
+    }
+}
+
+fn remediation_drop(items: Vec<DragItem>) -> Event {
+    Event::Drop(DropEvent {
+        modifiers: KeyModifiers::default(),
+        handled: Arc::new(std::sync::Mutex::new(false)),
+        abs: dvec2(10.0, 10.0),
+        items: Arc::new(items),
+    })
+}
+
+fn remediation_file_item(path: PathBuf) -> DragItem {
+    DragItem::FilePath {
+        path: path.to_string_lossy().into_owned(),
+        internal_id: None,
+    }
+}
+
+#[test]
+fn remediation_ctrl_y_rejects_inactive_stale_and_unfocused_contexts() {
+    let mut writer = WriterViewModel::new();
+    writer.insert_text("Черновик🙂").unwrap();
+    let mut state = state_with_test_document("draft.docx", OpenDocument::Writer(Box::new(writer)));
+    let id = state.active_document_id().unwrap();
+    let block = state.writer_text_editor_blocks()[0].block_id;
+    let token = state.begin_writer_inline_session(id, block).unwrap();
+    state
+        .update_writer_inline_draft(&token, "Сохранить🙂".into())
+        .unwrap();
+    let key = Event::KeyDown(KeyEvent {
+        key_code: KeyCode::KeyY,
+        modifiers: KeyModifiers {
+            control: true,
+            ..Default::default()
+        },
+        ..Default::default()
+    });
+    let draft_before = state.writer_text_drafts.get(&id).unwrap().clone();
+    assert!(
+        state
+            .writer_inline_redo_event(&key, Some(&token), true)
+            .is_some()
+    );
+    assert!(
+        state
+            .writer_inline_redo_event(&key, Some(&token), false)
+            .is_none()
+    );
+    assert!(state.writer_inline_redo_event(&key, None, true).is_none());
+    let stale = WriterInlineEditorSession {
+        epoch: token.epoch + 1,
+        ..token.clone()
+    };
+    assert!(
+        state
+            .writer_inline_redo_event(&key, Some(&stale), true)
+            .is_none()
+    );
+    let other = attach_test_document(
+        &mut state,
+        "other.xlsx",
+        OpenDocument::Sheets(WorkbookSnapshot::default()),
+    );
+    assert_eq!(state.active_document_id(), Some(other));
+    assert!(
+        state
+            .writer_inline_redo_event(&key, Some(&token), true)
+            .is_none()
+    );
+    state.activate_document(id).unwrap();
+    let Some(OpenDocument::Writer(writer)) = state.document_mut() else {
+        panic!("Writer")
+    };
+    writer.insert_text("conflicting change").unwrap();
+    let snapshot = writer.snapshot();
+    let history = (writer.api().can_undo(), writer.api().can_redo());
+    assert!(
+        state
+            .writer_inline_redo_event(&key, Some(&token), true)
+            .is_none()
+    );
+    let Some(OpenDocument::Writer(writer)) = state.document() else {
+        panic!("Writer")
+    };
+    assert_eq!(writer.snapshot(), snapshot);
+    assert_eq!((writer.api().can_undo(), writer.api().can_redo()), history);
+    assert_eq!(state.writer_text_drafts.get(&id), Some(&draft_before));
+    assert_eq!(state.writer_inline_session.as_ref(), Some(&token));
+}
+
+#[test]
+fn remediation_redo_mapping_does_not_map_twice_or_change_ctrl_z() {
+    let ctrl_y = Event::KeyDown(KeyEvent {
+        key_code: KeyCode::KeyY,
+        modifiers: KeyModifiers {
+            control: true,
+            ..Default::default()
+        },
+        ..Default::default()
+    });
+    let mapped = crate::app_writer::writer_inline_redo_key_event(&ctrl_y, true).unwrap();
+    assert!(crate::app_writer::writer_inline_redo_key_event(&mapped, true).is_none());
+    let ctrl_z = Event::KeyDown(KeyEvent {
+        key_code: KeyCode::KeyZ,
+        modifiers: KeyModifiers {
+            control: true,
+            ..Default::default()
+        },
+        ..Default::default()
+    });
+    assert!(crate::app_writer::writer_inline_redo_key_event(&ctrl_z, true).is_none());
+}
+
+#[test]
+fn remediation_empty_input_area_never_owns_inline_redo() {
+    let cx = Cx::new(Box::new(|_, _| {}));
+    assert!(!crate::app_writer::writer_inline_input_has_key_focus(
+        &cx,
+        Area::Empty
+    ));
+}
+
+#[test]
+fn remediation_drop_rejects_directory_named_as_docx() {
+    let path = std::env::temp_dir().join(format!(
+        "rudra-drop-directory-{}-{}.docx",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&path).unwrap();
+    let mut app = remediation_app(AppState::default());
+    let mut cx = Cx::new(Box::new(|_, _| {}));
+    let event = remediation_drop(vec![remediation_file_item(path.clone())]);
+    let handled = app.handle_document_file_drop(&mut cx, &event);
+    std::fs::remove_dir(&path).unwrap();
+    assert!(!handled);
+    assert!(app.state.open_job.is_none());
+    assert_eq!(app.state.active_document_id(), None);
+}
+
+#[test]
+fn remediation_drop_rejects_unsupported_multiple_and_internal_items_without_state_changes() {
+    let mut app = remediation_app(AppState::default());
+    let mut cx = Cx::new(Box::new(|_, _| {}));
+    let good = remediation_file_item(std::env::temp_dir().join("one.docx"));
+    for items in [
+        vec![],
+        vec![good.clone(), good],
+        vec![remediation_file_item(std::env::temp_dir().join("one.exe"))],
+        vec![DragItem::FilePath {
+            path: std::env::temp_dir()
+                .join("one.docx")
+                .to_string_lossy()
+                .into_owned(),
+            internal_id: Some(LiveId(1)),
+        }],
+    ] {
+        let event = remediation_drop(items);
+        assert!(!app.handle_document_file_drop(&mut cx, &event));
+        let Event::Drop(drop) = event else {
+            unreachable!()
+        };
+        assert!(!*drop.handled.lock().unwrap());
+        assert!(app.state.open_job.is_none());
+        assert_eq!(app.state.active_document_id(), None);
+    }
+}
+
+#[test]
+fn remediation_drop_admission_errors_preserve_document_and_consume_event_once() {
+    let mut writer = WriterViewModel::new();
+    writer.insert_text("keep🙂").unwrap();
+    let state = state_with_test_document("keep.docx", OpenDocument::Writer(Box::new(writer)));
+    let id = state.active_document_id().unwrap();
+    let mut app = remediation_app(state);
+    let mut cx = Cx::new(Box::new(|_, _| {}));
+    let before = match app.state.document().unwrap() {
+        OpenDocument::Writer(w) => w.snapshot(),
+        _ => unreachable!(),
+    };
+    let missing_parent = std::env::temp_dir().join(format!(
+        "rudra-missing-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    for name in ["missing.docx", "invalid\0.docx"] {
+        let event = remediation_drop(vec![remediation_file_item(missing_parent.join(name))]);
+        assert!(app.handle_document_file_drop(&mut cx, &event));
+        assert!(
+            app.state.open_job.is_none(),
+            "admission must fail before worker creation"
+        );
+        assert_eq!(app.state.active_document_id(), Some(id));
+        assert_eq!(app.state.documents.len(), 1);
+        let OpenDocument::Writer(writer) = app.state.document().unwrap() else {
+            unreachable!()
+        };
+        assert_eq!(writer.snapshot(), before);
+        assert!(
+            !app.handle_document_file_drop(&mut cx, &event),
+            "same event is not opened twice"
+        );
+    }
+}
+
+#[test]
+fn remediation_drag_advertises_copy_only_when_not_already_handled_or_busy() {
+    let mut app = remediation_app(AppState::default());
+    let mut cx = Cx::new(Box::new(|_, _| {}));
+    let drag = DragEvent {
+        modifiers: KeyModifiers::default(),
+        handled: Arc::new(std::sync::Mutex::new(false)),
+        abs: dvec2(10.0, 10.0),
+        items: Arc::new(vec![
+            remediation_file_item(controlled_writer_fixture_path()),
+        ]),
+        response: Arc::new(std::sync::Mutex::new(DragResponse::None)),
+    };
+    assert!(app.handle_document_file_drop(&mut cx, &Event::Drag(drag.clone())));
+    assert_eq!(*drag.response.lock().unwrap(), DragResponse::Copy);
+    assert!(!app.handle_document_file_drop(&mut cx, &Event::Drag(drag)));
+    let (_sender, receiver) = mpsc::channel();
+    app.state.open_job = Some(DocumentOpenJob { receiver });
+    let busy = DragEvent {
+        modifiers: KeyModifiers::default(),
+        handled: Arc::new(std::sync::Mutex::new(false)),
+        abs: dvec2(10.0, 10.0),
+        items: Arc::new(vec![
+            remediation_file_item(controlled_writer_fixture_path()),
+        ]),
+        response: Arc::new(std::sync::Mutex::new(DragResponse::None)),
+    };
+    assert!(!app.handle_document_file_drop(&mut cx, &Event::Drag(busy.clone())));
+    assert_eq!(*busy.response.lock().unwrap(), DragResponse::None);
+    assert!(!*busy.handled.lock().unwrap());
+    assert_eq!(app.state.documents.len(), 0);
+}
+
+#[test]
+fn remediation_corrupt_drop_has_no_phantom_tab_or_document_mutation() {
+    let path = std::env::temp_dir().join(format!(
+        "rudra-corrupt-drop-{}-{}.docx",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::write(&path, b"not a DOCX package").unwrap();
+    let state = state_with_test_document(
+        "keep.docx",
+        OpenDocument::Writer(Box::new(WriterViewModel::new())),
+    );
+    let id = state.active_document_id().unwrap();
+    let mut app = remediation_app(state);
+    let mut cx = Cx::new(Box::new(|_, _| {}));
+    let before = match app.state.document().unwrap() {
+        OpenDocument::Writer(w) => w.snapshot(),
+        _ => unreachable!(),
+    };
+    let event = remediation_drop(vec![remediation_file_item(path.clone())]);
+    assert!(app.handle_document_file_drop(&mut cx, &event));
+    let result = app
+        .state
+        .open_job
+        .as_ref()
+        .unwrap()
+        .receiver
+        .recv_timeout(std::time::Duration::from_secs(10))
+        .unwrap();
+    app.finish_open_result(&mut cx, result);
+    std::fs::remove_file(path).unwrap();
+    assert!(app.state.open_job.is_none());
+    assert_eq!(app.state.documents.len(), 1);
+    assert_eq!(app.state.active_document_id(), Some(id));
+    let OpenDocument::Writer(w) = app.state.document().unwrap() else {
+        unreachable!()
+    };
+    assert_eq!(w.snapshot(), before);
+}
+
+#[test]
+fn remediation_drop_busy_and_after_close_use_only_fresh_document_session() {
+    let mut state = state_with_test_document(
+        "closed.docx",
+        OpenDocument::Writer(Box::new(WriterViewModel::new())),
+    );
+    let closed = state.active_document_id().unwrap();
+    state.close_document(closed).unwrap();
+    let mut app = remediation_app(state);
+    let mut cx = Cx::new(Box::new(|_, _| {}));
+    let event = remediation_drop(vec![
+        remediation_file_item(controlled_writer_fixture_path()),
+    ]);
+    assert!(app.handle_document_file_drop(&mut cx, &event));
+    assert!(app.state.documents.get(closed).is_none());
+    assert!(!app.handle_document_file_drop(&mut cx, &event));
+    let second = remediation_drop(vec![
+        remediation_file_item(controlled_writer_fixture_path()),
+    ]);
+    assert!(
+        !app.handle_document_file_drop(&mut cx, &second),
+        "busy open must not create another worker"
+    );
+    let Event::Drop(second) = second else {
+        unreachable!()
+    };
+    assert!(!*second.handled.lock().unwrap());
+    let result = app
+        .state
+        .open_job
+        .as_ref()
+        .unwrap()
+        .receiver
+        .recv_timeout(std::time::Duration::from_secs(10))
+        .unwrap();
+    app.finish_open_result(&mut cx, result);
+    assert!(app.state.open_job.is_none());
+    assert!(app.state.documents.get(closed).is_none());
+    assert_ne!(app.state.active_document_id(), Some(closed));
+    assert!(matches!(
+        app.state.document(),
+        Some(OpenDocument::Writer(_))
+    ));
+    assert!(
+        !app.handle_document_file_drop(&mut cx, &event),
+        "completed drop event remains consumed"
+    );
 }
 
 #[test]

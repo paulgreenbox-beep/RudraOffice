@@ -1,7 +1,53 @@
 //! Application-owned module extracted without changing behavior.
 use super::*;
 
+pub(crate) fn single_dropped_document(items: &[DragItem]) -> Option<PathBuf> {
+    let [
+        DragItem::FilePath {
+            path,
+            internal_id: None,
+        },
+    ] = items
+    else {
+        return None;
+    };
+    let path = PathBuf::from(path);
+    let extension = path.extension()?.to_str()?.to_ascii_lowercase();
+    if path.is_absolute()
+        && !path.is_dir()
+        && matches!(extension.as_str(), "docx" | "xlsx" | "pptx" | "pdf")
+    {
+        Some(path)
+    } else {
+        None
+    }
+}
+
 impl App {
+    pub(crate) fn handle_document_file_drop(&mut self, cx: &mut Cx, event: &Event) -> bool {
+        match event {
+            Event::Drag(drag) if !*drag.handled.lock().unwrap() => {
+                if self.state.open_job.is_none() && single_dropped_document(&drag.items).is_some() {
+                    *drag.response.lock().unwrap() = DragResponse::Copy;
+                    *drag.handled.lock().unwrap() = true;
+                    return true;
+                }
+            }
+            Event::Drop(drop) if !*drop.handled.lock().unwrap() => {
+                if self.state.open_job.is_none()
+                    && let Some(path) = single_dropped_document(&drop.items)
+                {
+                    *drop.handled.lock().unwrap() = true;
+                    // Reuse size admission, byte reading, worker parsing and session commit.
+                    self.open_document_path(cx, path);
+                    return true;
+                }
+            }
+            _ => {}
+        }
+        false
+    }
+
     pub(crate) fn position_file_menu(&mut self, cx: &mut Cx) {
         let trigger = self.ui.button(cx, ids!(menu_file_button)).area().rect(cx);
         if trigger.size.x <= 0.0 || trigger.size.y <= 0.0 {

@@ -809,6 +809,9 @@ impl AppMain for App {
             });
             self.refresh_native_paste_target(cx);
         }
+        if self.handle_document_file_drop(cx, event) {
+            return;
+        }
         self.dismiss_file_menu_on_outside_pointer(cx, event);
         if self.handle_custom_chrome_pointer(cx, event) {
             return;
@@ -896,8 +899,17 @@ impl AppMain for App {
             .ui
             .widget(cx, ids!(writer_inline_text_input))
             .widget_uid();
+        let inline_area = self
+            .ui
+            .text_input(cx, ids!(writer_inline_text_input))
+            .area();
+        let inline_focused = crate::app_writer::writer_inline_input_has_key_focus(cx, inline_area);
+        let inline_redo =
+            self.state
+                .writer_inline_redo_event(event, inline_session.as_ref(), inline_focused);
+        let widget_event = inline_redo.as_ref().unwrap_or(event);
         cx.mutate_actions(
-            |cx| self.ui.handle_event(cx, event, &mut Scope::empty()),
+            |cx| self.ui.handle_event(cx, widget_event, &mut Scope::empty()),
             |new_actions| {
                 for action in new_actions {
                     let Some(widget_action) = action.downcast_mut::<WidgetAction>() else {

@@ -1,7 +1,55 @@
 //! Application-owned module extracted without changing behavior.
 use super::*;
 
+pub(crate) fn writer_inline_input_has_key_focus(cx: &Cx, area: Area) -> bool {
+    !area.is_empty() && area.is_valid(cx) && cx.has_key_focus(area)
+}
+
+pub(crate) fn writer_inline_redo_key_event(event: &Event, inline_focused: bool) -> Option<Event> {
+    let Event::KeyDown(key) = event else {
+        return None;
+    };
+    if !inline_focused
+        || key.key_code != KeyCode::KeyY
+        || !key.modifiers.control
+        || key.modifiers.alt
+        || key.modifiers.logo
+        || key.modifiers.shift
+    {
+        return None;
+    }
+    // The pinned TextInput implements local Redo as Ctrl+Shift+Z.
+    // Keep the mapped event on the normal, session-stamped widget path.
+    let mut mapped = *key;
+    mapped.key_code = KeyCode::KeyZ;
+    mapped.modifiers.shift = true;
+    Some(Event::KeyDown(mapped))
+}
+
 impl AppState {
+    pub(crate) fn writer_inline_redo_event(
+        &self,
+        event: &Event,
+        editor: Option<&WriterInlineEditorSession>,
+        inline_focused: bool,
+    ) -> Option<Event> {
+        let mapped = writer_inline_redo_key_event(event, inline_focused)?;
+        let session = editor?;
+        if !self.should_show_writer_view()
+            || self.active_document_id() != Some(session.document_id)
+            || self.writer_inline_session.as_ref() != Some(session)
+        {
+            return None;
+        }
+        let Some(OpenDocument::Writer(writer)) = self.document() else {
+            return None;
+        };
+        if writer.api().editor().revision() != session.revision {
+            return None;
+        }
+        Some(mapped)
+    }
+
     pub(crate) fn writer_inline_draft_is_active(&self) -> bool {
         self.writer_inline_session
             .as_ref()
